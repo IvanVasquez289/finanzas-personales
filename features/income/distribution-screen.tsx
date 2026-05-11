@@ -1,0 +1,88 @@
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft, CalendarDays, CreditCard, PiggyBank, WalletCards } from "lucide-react";
+import { AllocationSlider } from "@/components/income/allocation-slider";
+import { BigNum } from "@/components/finance/big-num";
+import { SegmentBar } from "@/components/finance/segment-bar";
+import { Tag } from "@/components/finance/tag";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { FinanceSnapshot } from "@/lib/finance-snapshot";
+import { FT } from "@/lib/finance-tokens";
+import { money } from "@/lib/money";
+
+export function DistributionScreen({ data }: { data: FinanceSnapshot }) {
+  const ingreso = data.income.amount || 1;
+  const [vals, setVals] = useState({
+    pago: data.allocation.pagoTarjetas,
+    ahorro: data.allocation.ahorro,
+    fijos: data.allocation.fijos,
+    libre: data.allocation.libre,
+  });
+  const total = vals.pago + vals.ahorro + vals.fijos + vals.libre;
+  const diff = ingreso - total;
+  const sobres = [
+    { key: "pago" as const, name: "Pago tarjetas", sugerido: 2500, color: FT.accent, note: "Cubre BBVA + Liverpool + MSI", icon: CreditCard },
+    { key: "ahorro" as const, name: "Ahorro", sugerido: 2500, color: FT.pos, note: "Meta MacBook · $48,000", icon: PiggyBank },
+    { key: "fijos" as const, name: "Fijos", sugerido: 950, color: "#8B6CF0", note: "MacBook $1,400 · Internet $500", icon: CalendarDays },
+    { key: "libre" as const, name: "Libre", sugerido: 3300, color: FT.warn, note: "Gastos variables · 14 días", icon: WalletCards },
+  ];
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+      <div className="flex items-center justify-between px-4 pb-4">
+        <Button variant="secondary" size="icon" aria-label="Regresar"><ArrowLeft size={16} /></Button>
+        <div className="text-[14px] text-[#a4adbe]">Paso 2 de 3</div>
+        <button className="text-[13px] font-medium text-[#2A5BFF]">Sugerencia</button>
+      </div>
+      <div className="px-5 pb-2">
+        <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Quincena recibida</div>
+        <div className="mt-1.5 flex items-baseline gap-2.5">
+          <BigNum value={ingreso} size={36} />
+          <Tag color={FT.pos} bg={FT.posSoft}>+ ingreso</Tag>
+        </div>
+        <div className="mt-1.5 text-[13px] text-[#a4adbe]">¿Cómo lo repartimos hoy?</div>
+      </div>
+      <div className="px-4 py-3">
+        <Card className="p-3.5">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[13px] text-[#a4adbe]">
+              Asignado · <span className="font-mono text-[#eef2f8]">{money(total)}</span>
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: diff === 0 ? FT.pos : diff > 0 ? FT.warn : FT.danger }}>
+              {diff === 0 ? "✓ Cuadrado" : diff > 0 ? `Faltan ${money(diff)}` : `Te pasaste ${money(Math.abs(diff))}`}
+            </div>
+          </div>
+          <SegmentBar
+            segments={[
+              { value: vals.pago, color: FT.accent },
+              { value: vals.ahorro, color: FT.pos },
+              { value: vals.fijos, color: "#8B6CF0" },
+              { value: vals.libre, color: FT.warn },
+              ...(diff > 0 ? [{ value: diff, color: "rgba(255,255,255,0.06)" }] : []),
+            ]}
+          />
+        </Card>
+      </div>
+      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-32">
+        <div className="flex flex-col gap-2.5">
+          {sobres.map(({ key, ...sobre }) => (
+            <AllocationSlider
+              key={key}
+              {...sobre}
+              value={vals[key]}
+              ingreso={ingreso}
+              onChange={(value) => setVals((current) => ({ ...current, [key]: value }))}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#06080c] from-60% to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-3">
+        <Button className="w-full" disabled={diff !== 0}>
+          Confirmar distribución
+        </Button>
+      </div>
+    </div>
+  );
+}

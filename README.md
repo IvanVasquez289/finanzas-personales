@@ -93,7 +93,13 @@ prisma/migrations/20260511012500_harden_prisma_migrations_table/migration.sql
 Los archivos originales exportados desde Claude Design se conservan en `project/` como referencia. La implementación productiva está en:
 
 - `app/page.tsx`
-- `components/finance-app.tsx`
+- `components/finance-app.tsx`: orquestador de navegación local.
+- `features/dashboard/dashboard-screen.tsx`
+- `features/credit-cards/card-detail-screen.tsx`
+- `features/accounts/envelopes-screen.tsx`
+- `features/income/distribution-screen.tsx`
+- `features/transactions/expense-form-screen.tsx`
+- `components/finance/*`: primitives financieras reutilizables.
 - `lib/finance-snapshot.ts`
 - `lib/db.ts`
 

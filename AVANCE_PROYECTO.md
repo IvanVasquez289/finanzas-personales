@@ -308,7 +308,19 @@ Pantallas definidas en `proyect.md` pero no implementadas visualmente:
 - `app/globals.css`: estilos globales, Tailwind y dark mode base.
 - `components/ui/button.tsx`: botón compatible con patrón shadcn/ui.
 - `components/ui/card.tsx`: superficie base para cards.
-- `components/finance-app.tsx`: app mobile-first con navegación local.
+- `components/finance-app.tsx`: orquestador de navegación local.
+- `components/app-shell/*`: shell móvil, header y tab bar.
+- `components/finance/*`: primitives financieras reutilizables.
+- `components/accounts/*`: componentes visuales de sobres/cuentas.
+- `components/cards/*`: componentes visuales de tarjetas.
+- `components/dashboard/*`: componentes visuales del dashboard.
+- `components/income/*`: componentes visuales de distribución.
+- `components/transactions/*`: componentes visuales de movimientos.
+- `features/dashboard/dashboard-screen.tsx`: pantalla Dashboard.
+- `features/credit-cards/card-detail-screen.tsx`: pantalla de tarjeta.
+- `features/accounts/envelopes-screen.tsx`: pantalla de sobres.
+- `features/income/distribution-screen.tsx`: pantalla de distribución.
+- `features/transactions/expense-form-screen.tsx`: pantalla de registro de gasto.
 - `lib/finance-snapshot.ts`: consulta server-side que arma el estado de UI desde Prisma.
 - `lib/db.ts`: Prisma Client con `@prisma/adapter-pg`.
 - `prisma/seed.cjs`: seed idempotente de datos iniciales reales.

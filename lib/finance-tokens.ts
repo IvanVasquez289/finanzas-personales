@@ -1,0 +1,18 @@
+export const FT = {
+  bg: "#06080c",
+  surface: "#10141c",
+  surface2: "#161b25",
+  surface3: "#1d2330",
+  hairline: "rgba(255,255,255,0.06)",
+  text: "#eef2f8",
+  textDim: "#a4adbe",
+  textMute: "#6a7384",
+  textFade: "#444c5b",
+  accent: "#2A5BFF",
+  accentSoft: "rgba(42,91,255,0.16)",
+  pos: "#3DD68C",
+  posSoft: "rgba(61,214,140,0.14)",
+  warn: "#F5B544",
+  warnSoft: "rgba(245,181,68,0.14)",
+  danger: "#F46A6A",
+} as const;
