@@ -65,6 +65,20 @@ export type FinanceSnapshot = {
     date: string;
     income?: boolean;
   }[];
+  expenseForm: {
+    categories: {
+      id: string;
+      label: string;
+      color: string;
+    }[];
+    accounts: {
+      id: string;
+      label: string;
+      sub: string;
+      paymentMethod: "credit_card" | "debit" | "cash" | "transfer";
+      cycleLabel?: string;
+    }[];
+  };
 };
 
 const MX_DATE = new Intl.DateTimeFormat("es-MX", {
@@ -291,7 +305,44 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
       date: formatShortDate(transaction.date),
       income: transaction.direction === "income",
     })),
+    expenseForm: {
+      categories: await getExpenseCategories(user.id),
+      accounts: accounts
+        .filter((account) => ["credit_card", "store_card", "debit", "cash", "envelope"].includes(account.type))
+        .map((account) => {
+          const credit = creditAccounts.find((item) => item.accountId === account.id);
+          const cycle = credit?.cycles[0];
+          const isCredit = account.type === "credit_card" || account.type === "store_card";
+
+          return {
+            id: account.id,
+            label: account.name,
+            sub: isCredit
+              ? `${credit?.issuer ?? "Crédito"} · presupuesto ${toCurrency(toAmount(credit?.personalBudgetCents))}`
+              : `${account.type === "envelope" ? "Sobre" : "Cuenta"} · ${toCurrency(toAmount(account.currentBalanceCents))}`,
+            paymentMethod: isCredit ? "credit_card" : account.type === "cash" ? "cash" : "debit",
+            cycleLabel: cycle ? `Ciclo ${formatCycle(cycle.startDate, cycle.endDate)}` : undefined,
+          };
+        }),
+    },
   };
+}
+
+async function getExpenseCategories(userId: string) {
+  const categories = await prisma.category.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return categories.map((category) => ({
+    id: category.id,
+    label: category.name,
+    color: category.color ?? "#a4adbe",
+  }));
+}
+
+function toCurrency(amount: number) {
+  return `$${amount.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
 function emptySnapshot(): FinanceSnapshot {
@@ -313,5 +364,9 @@ function emptySnapshot(): FinanceSnapshot {
     creditCards: [],
     payments: [],
     transactions: [],
+    expenseForm: {
+      categories: [],
+      accounts: [],
+    },
   };
 }

@@ -27,7 +27,7 @@ Estado importante:
 - Prisma Client ya puede consultar la base con `@prisma/adapter-pg`.
 - La pantalla principal ya lee datos reales desde Supabase vía Prisma.
 - Ya existe seed idempotente para datos iniciales reales.
-- Todavía no hay server actions ni API routes conectadas a Prisma.
+- Ya existe una primera server action conectada a Prisma para crear gastos manuales.
 - Todavía no hay autenticación.
 
 ## 2. Supabase: siguientes pasos
@@ -257,7 +257,7 @@ Pendiente:
 
 ### Registro de gasto
 
-Estado: maquetado con interacción local.
+Estado: primera versión conectada a Prisma.
 
 Incluye:
 
@@ -270,12 +270,18 @@ Incluye:
 
 Pendiente:
 
-- Validación con Zod.
-- Guardar `Transaction`.
-- Asignar `creditCardCycleId` automáticamente.
-- Generar fingerprint de duplicado.
+- Completar UX de fecha/hora editable.
 - Actualizar presupuestos y dashboard.
 - Manejar MSI como `InstallmentPlan`.
+
+Implementado:
+
+- Validación básica con Zod.
+- Guardado de `Transaction` manual vía server action.
+- Asignación automática al ciclo abierto de tarjeta.
+- Fingerprint único para detectar duplicados exactos.
+- Descuento de saldo para cuentas no crediticias.
+- Revalidación del dashboard después de guardar.
 
 ## 4. Qué no está maquetado todavía
 
@@ -400,7 +406,7 @@ Implementar acciones para:
 
 - Crear ingreso quincenal.
 - Confirmar distribución de ingreso.
-- Crear gasto manual.
+- Crear gasto manual. Estado: primera versión implementada.
 - Crear cuenta/sobre.
 - Crear tarjeta.
 - Actualizar presupuesto personal de tarjeta.

@@ -1,37 +1,58 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ReceiptText } from "lucide-react";
 import { Dot } from "@/components/finance/dot";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Tag } from "@/components/finance/tag";
 import { Card } from "@/components/ui/card";
+import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
+import { createExpenseAction } from "./actions";
 
-export function ExpenseFormScreen() {
+export function ExpenseFormScreen({
+  data,
+  onCancel,
+  onSaved,
+}: {
+  data: FinanceSnapshot;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const router = useRouter();
   const [amount, setAmount] = useState("128.40");
-  const [cat, setCat] = useState("transporte");
-  const [method, setMethod] = useState("bbva");
-  const cats = [
-    { id: "transporte", label: "Transporte", color: FT.accent },
-    { id: "comida", label: "Comida/salidas", color: "#8B6CF0" },
-    { id: "tools", label: "Tools/subs", color: "#3DD6C9" },
-    { id: "libre", label: "Libre", color: FT.warn },
-    { id: "msi", label: "MSI", color: FT.danger },
-    { id: "fijos", label: "Fijos", color: FT.pos },
-  ];
-  const methods = [
-    { id: "bbva", label: "BBVA Azul", sub: "Crédito · 4821" },
-    { id: "liverpool", label: "Liverpool", sub: "Crédito · 9942" },
-    { id: "debito", label: "BBVA Débito", sub: "Libre · $1,820" },
-  ];
+  const [merchant, setMerchant] = useState("Uber");
+  const [note, setNote] = useState("Didi al aeropuerto, viernes");
+  const [cat, setCat] = useState(data.expenseForm.categories[0]?.id ?? "");
+  const [method, setMethod] = useState(data.expenseForm.accounts[0]?.id ?? "");
+  const [state, formAction, pending] = useActionState(createExpenseAction, {
+    ok: false,
+    message: "",
+  });
+
+  const cats = data.expenseForm.categories;
+  const methods = data.expenseForm.accounts;
+  const selectedMethod = methods.find((item) => item.id === method);
+
+  useEffect(() => {
+    if (!state.ok) return;
+
+    router.refresh();
+    onSaved();
+  }, [onSaved, router, state.ok]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+    <form action={formAction} className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+      <input type="hidden" name="amount" value={amount} />
+      <input type="hidden" name="categoryId" value={cat} />
+      <input type="hidden" name="accountId" value={method} />
       <div className="flex items-center justify-between px-4 pb-3">
-        <button className="text-[14px] text-[#a4adbe]">Cancelar</button>
+        <button type="button" className="text-[14px] text-[#a4adbe]" onClick={onCancel}>Cancelar</button>
         <div className="text-[15px] font-semibold">Nuevo gasto</div>
-        <button className="text-[14px] font-semibold text-[#2A5BFF]">Guardar</button>
+        <button className="text-[14px] font-semibold text-[#2A5BFF] disabled:text-[#6a7384]" disabled={pending || !cat || !method}>
+          {pending ? "Guardando" : "Guardar"}
+        </button>
       </div>
       <div className="px-5 pb-2 pt-6 text-center">
         <div className="mb-2 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Monto</div>
@@ -41,14 +62,25 @@ export function ExpenseFormScreen() {
           <span className="text-[32px] font-semibold text-[#a4adbe]">.{amount.split(".")[1] || "00"}</span>
           <span className="ml-1 inline-block h-9 w-0.5 animate-[blink_1s_steps(2)_infinite] bg-[#2A5BFF]" />
         </div>
-        <div className="mt-2 text-[12px] text-[#6a7384]">9 may · 14:22 · Uber</div>
+        <div className="mt-2 text-[12px] text-[#6a7384]">Hoy · {merchant || "Sin comercio"}</div>
       </div>
       <div className="no-scrollbar flex-1 overflow-auto px-4 pb-4">
+        <div className="mt-2">
+          <SectionHeader title="Comercio" />
+          <input
+            name="merchant"
+            value={merchant}
+            onChange={(event) => setMerchant(event.target.value)}
+            className="h-12 w-full rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[15px] text-[#eef2f8] outline-none placeholder:text-[#6a7384] focus:border-[#2A5BFF]/60"
+            placeholder="Uber, Bama, Amazon..."
+          />
+        </div>
         <div className="mt-2">
           <SectionHeader title="Categoría" />
           <div className="flex flex-wrap gap-2">
             {cats.map((c) => (
               <button
+                type="button"
                 key={c.id}
                 onClick={() => setCat(c.id)}
                 className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium"
@@ -64,7 +96,7 @@ export function ExpenseFormScreen() {
           <SectionHeader title="Cargar a" />
           <Card className="overflow-hidden">
             {methods.map((m, index) => (
-              <button key={m.id} onClick={() => setMethod(m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === methods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
+              <button type="button" key={m.id} onClick={() => setMethod(m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === methods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <span className="grid size-[22px] shrink-0 place-items-center rounded-full border" style={{ borderColor: method === m.id ? FT.accent : "rgba(255,255,255,0.10)" }}>
                   {method === m.id ? <span className="size-2.5 rounded-full bg-[#2A5BFF]" /> : null}
                 </span>
@@ -72,7 +104,7 @@ export function ExpenseFormScreen() {
                   <span className="block text-[14px] font-medium">{m.label}</span>
                   <span className="mt-0.5 block text-[11px] text-[#6a7384]">{m.sub}</span>
                 </span>
-                {method === m.id ? <Tag color={FT.accent} bg={FT.accentSoft}>Ciclo 06 may → 05 jun</Tag> : null}
+                {method === m.id && m.cycleLabel ? <Tag color={FT.accent} bg={FT.accentSoft}>{m.cycleLabel}</Tag> : null}
               </button>
             ))}
           </Card>
@@ -90,11 +122,27 @@ export function ExpenseFormScreen() {
         </Card>
         <Card className="mt-3.5 p-3.5">
           <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Nota</div>
-          <div className="mt-1.5 text-[14px] text-[#a4adbe]">Didi al aeropuerto, viernes</div>
+          <input
+            name="note"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            className="mt-1.5 w-full bg-transparent text-[14px] text-[#a4adbe] outline-none placeholder:text-[#6a7384]"
+            placeholder="Detalle opcional"
+          />
         </Card>
+        {state.message ? (
+          <div className="mt-3.5 rounded-2xl border border-white/[0.08] bg-[#10141d] px-3.5 py-3 text-[13px]" style={{ color: state.ok ? FT.pos : FT.danger }}>
+            {state.message}
+          </div>
+        ) : null}
+        {!selectedMethod ? (
+          <div className="mt-3.5 rounded-2xl border border-white/[0.08] bg-[#10141d] px-3.5 py-3 text-[13px] text-[#a4adbe]">
+            No hay cuentas disponibles para guardar gastos.
+          </div>
+        ) : null}
       </div>
       <Keypad value={amount} setValue={setAmount} />
-    </div>
+    </form>
   );
 }
 
@@ -103,6 +151,8 @@ function Keypad({ value, setValue }: { value: string; setValue: (value: string) 
   const press = (key: string) => {
     if (key === "del") return setValue(value.length > 1 ? value.slice(0, -1) : "0");
     if (key === ".") return setValue(value.includes(".") ? value : `${value}.`);
+    if (value.includes(".") && value.split(".")[1]?.length >= 2) return;
+    if (value.replace(".", "").length >= 8) return;
     setValue(value === "0" ? key : `${value}${key}`);
   };
 
@@ -112,7 +162,7 @@ function Keypad({ value, setValue }: { value: string; setValue: (value: string) 
         {keys.map((row) => (
           <div key={row.join("")} className="flex gap-1.5">
             {row.map((key) => (
-              <button key={key} onClick={() => press(key)} className="flex h-[46px] flex-1 items-center justify-center rounded-xl border border-white/[0.06] bg-[#161b25] font-mono text-[22px] font-medium">
+              <button type="button" key={key} onClick={() => press(key)} className="flex h-[46px] flex-1 items-center justify-center rounded-xl border border-white/[0.06] bg-[#161b25] font-mono text-[22px] font-medium">
                 {key === "del" ? <ReceiptText size={20} className="text-[#a4adbe]" /> : key}
               </button>
             ))}
