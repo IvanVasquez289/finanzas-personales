@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Finanzas — Sistema personal · V1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      background: #04060a;
+      font-family: "Geist", -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: #eef2f8;
+      overflow: hidden;
+      width: 100%; height: 100vh;
+    }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; }
+    @keyframes blink { 0%, 50% { opacity: 1 } 50.01%, 100% { opacity: 0 } }
+    /* Prevent flex children from collapsing in vertical scroll containers */
+    .ft-stack > * { flex-shrink: 0; }
+    /* canvas tweaks */
+    .dc-section-title { font-family: "Geist", sans-serif !important; }
+    .dc-artboard-label { font-family: "Geist Mono", monospace !important; }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="finance-tokens.jsx"></script>
+  <script type="text/babel" src="screen-dashboard.jsx"></script>
+  <script type="text/babel" src="screen-tarjeta.jsx"></script>
+  <script type="text/babel" src="screen-sobres.jsx"></script>
+  <script type="text/babel" src="screen-distribucion.jsx"></script>
+  <script type="text/babel" src="screen-gasto.jsx"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const PHONE_W = 390;
+    const PHONE_H = 844;
+
+    function Phone({ children, dark = true }) {
+      return (
+        <IOSDevice width={PHONE_W} height={PHONE_H} dark={dark}>
+          {children}
+        </IOSDevice>
+      );
+    }
+
+    function App() {
+      return (
+        <DesignCanvas
+          title="Finanzas — Sistema personal de control financiero"
+          subtitle="V1 · Mobile-first PWA · iPhone · Oscuro premium · Datos del contrato técnico"
+        >
+          <DCSection id="overview" title="01 · Flujo principal" subtitle="De recibir la quincena al gasto del día — un solo lenguaje visual.">
+            <DCArtboard id="dashboard" label="Dashboard" width={PHONE_W} height={PHONE_H}>
+              <Phone><ScreenDashboard/></Phone>
+            </DCArtboard>
+            <DCArtboard id="tarjeta" label="Tarjeta · ciclo BBVA" width={PHONE_W} height={PHONE_H}>
+              <Phone><ScreenTarjeta/></Phone>
+            </DCArtboard>
+            <DCArtboard id="sobres" label="Sobres / cuentas" width={PHONE_W} height={PHONE_H}>
+              <Phone><ScreenSobres/></Phone>
+            </DCArtboard>
+            <DCArtboard id="distribucion" label="Distribución de quincena" width={PHONE_W} height={PHONE_H}>
+              <Phone><ScreenDistribucion/></Phone>
+            </DCArtboard>
+            <DCArtboard id="gasto" label="Registro de gasto" width={PHONE_W} height={PHONE_H}>
+              <Phone><ScreenGasto/></Phone>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="system" title="02 · Sistema visual" subtitle="Tokens, tono y reglas que sostienen las 5 pantallas.">
+            <DCArtboard id="tokens" label="Tokens & tono" width={720} height={PHONE_H}>
+              <SystemPanel/>
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    function SystemPanel() {
+      const swatches = [
+        ['Fondo',      FT.bg,        '#04060a / #06080c'],
+        ['Superficie', FT.surface,   '#10141c'],
+        ['Borde',      FT.hairline2, 'rgba(255,255,255,.10)'],
+        ['Texto',      FT.text,      '#eef2f8'],
+        ['Atenuado',   FT.textMute,  '#6a7384'],
+      ];
+      const accents = [
+        ['Acento',   FT.accent, 'Acción primaria · tarjetas BBVA'],
+        ['Positivo', FT.pos,    'Ahorro · ingreso · en camino'],
+        ['Atención', FT.warn,   'Libre · presupuesto cerca'],
+        ['Riesgo',   FT.danger, 'Excede presupuesto · libre = 0'],
+        ['MSI',      '#8B6CF0', 'Fijos · meses sin intereses'],
+      ];
+
+      return (
+        <div style={{
+          width: '100%', height: '100%', background: FT.bg, color: FT.text,
+          padding: 32, overflow: 'auto',
+          fontFamily: FT.sans,
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+            <div>
+              <div style={{
+                fontSize: 11, color: FT.textMute, letterSpacing: 0.8,
+                textTransform: 'uppercase', marginBottom: 14,
+              }}>Tipografía</div>
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ fontFamily: FT.sans, fontSize: 36, fontWeight: 600, letterSpacing: -0.8 }}>
+                  Hola, Iván.
+                </div>
+                <div style={{ fontFamily: FT.sans, fontSize: 13, color: FT.textMute, marginTop: 6 }}>
+                  Geist · 600/500/400 — titulares, copy y CTAs
+                </div>
+              </div>
+              <div>
+                <div style={{
+                  fontFamily: FT.mono, fontSize: 44, fontWeight: 600,
+                  letterSpacing: -1, fontVariantNumeric: 'tabular-nums',
+                }}>$11,247.50</div>
+                <div style={{ fontFamily: FT.sans, fontSize: 13, color: FT.textMute, marginTop: 6 }}>
+                  Geist Mono · tabular — cualquier número que se compare entre filas
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: 32, fontSize: 11, color: FT.textMute,
+                letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 14,
+              }}>Superficies</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {swatches.map(([name, hex, sub]) => (
+                  <div key={name} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 10, background: hex,
+                      border: `1px solid ${FT.hairline}`,
+                    }}/>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
+                      <div style={{ fontSize: 11, color: FT.textMute, fontFamily: FT.mono }}>{sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div style={{
+                fontSize: 11, color: FT.textMute, letterSpacing: 0.8,
+                textTransform: 'uppercase', marginBottom: 14,
+              }}>Acentos semánticos</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {accents.map(([name, hex, sub]) => (
+                  <div key={name} style={{
+                    padding: 14, borderRadius: 14,
+                    background: `${hex}14`, border: `1px solid ${hex}33`,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}>
+                    <div style={{
+                      width: 14, height: 14, borderRadius: 99, background: hex,
+                      boxShadow: `0 0 0 4px ${hex}22`,
+                    }}/>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: FT.text }}>{name}</div>
+                      <div style={{ fontSize: 12, color: FT.textDim, marginTop: 1 }}>{sub}</div>
+                    </div>
+                    <div style={{ fontFamily: FT.mono, fontSize: 11, color: FT.textMute }}>{hex}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{
+                marginTop: 32, fontSize: 11, color: FT.textMute,
+                letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 14,
+              }}>Tono · directo y personal</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <ToneRow good="Te quedan $1,820 libres"
+                          bad="Saldo disponible en cuenta corriente"/>
+                <ToneRow good="Corte en 26 días — vas bien"
+                          bad="Periodo de facturación activo"/>
+                <ToneRow good="Faltan $1,250 para tu meta del mes"
+                          bad="Progreso parcial hacia objetivo de ahorro"/>
+                <ToneRow good="Si Libre se acaba, no se repone con tarjeta"
+                          bad="Advertencia: bajo balance disponible"/>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 36 }}>
+            <div style={{
+              fontSize: 11, color: FT.textMute, letterSpacing: 0.8,
+              textTransform: 'uppercase', marginBottom: 14,
+            }}>Principios del sistema</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+              {[
+                ['Crédito ≠ disponible',  'El presupuesto personal manda sobre el límite bancario.'],
+                ['Ahorro intocable',      'Vive separado. Locked icon. Nunca cubre antojos.'],
+                ['Libre se respeta',      'Si llega a cero, alerta. No se recomienda usar tarjeta.'],
+                ['Ciclos reales',         'Los gastos van al ciclo de la tarjeta, no al mes calendario.'],
+                ['Comprometido visible',  'Pagos fijos + MSI + tarjetas se muestran antes de gastar.'],
+                ['Mínima carga mental',   'El número grande es la respuesta. El resto, contexto.'],
+              ].map(([t, d]) => (
+                <div key={t} style={{
+                  padding: 14, borderRadius: 14,
+                  background: FT.surface, border: `1px solid ${FT.hairline}`,
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: FT.text, marginBottom: 4 }}>{t}</div>
+                  <div style={{ fontSize: 12, color: FT.textDim, lineHeight: 1.45 }}>{d}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ToneRow({ good, bad }) {
+      return (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+          <div style={{
+            flex: 1, padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(61,214,140,0.08)', border: '1px solid rgba(61,214,140,0.22)',
+            fontSize: 13, color: FT.text,
+          }}>
+            <span style={{ color: FT.pos, marginRight: 6, fontWeight: 600 }}>✓</span>{good}
+          </div>
+          <div style={{
+            flex: 1, padding: '10px 12px', borderRadius: 10,
+            background: FT.surface, border: `1px dashed ${FT.hairline2}`,
+            fontSize: 13, color: FT.textMute, textDecoration: 'line-through',
+            textDecorationColor: 'rgba(255,255,255,0.18)',
+          }}>{bad}</div>
+        </div>
+      );
+    }
+
+    function mount() {
+      if (!window.DesignCanvas || !window.IOSDevice || !window.ScreenDashboard
+          || !window.ScreenTarjeta || !window.ScreenSobres
+          || !window.ScreenDistribucion || !window.ScreenGasto) {
+        return setTimeout(mount, 50);
+      }
+      ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    }
+    mount();
+  </script>
+</body>
+</html>

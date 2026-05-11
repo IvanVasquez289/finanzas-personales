@@ -1,0 +1,6 @@
+node_modules
+.env
+.next
+.prisma
+.DS_Store
+*.log

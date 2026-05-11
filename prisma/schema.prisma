@@ -1,0 +1,305 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountType {
+  debit
+  savings
+  credit_card
+  store_card
+  cash
+  envelope
+}
+
+enum CycleStatus {
+  open
+  closed
+  paid
+}
+
+enum TransactionDirection {
+  income
+  expense
+  transfer
+}
+
+enum PaymentMethod {
+  credit_card
+  debit
+  cash
+  transfer
+}
+
+enum TransactionSource {
+  manual
+  screenshot
+  pdf
+  system
+}
+
+enum TransactionStatus {
+  pending_review
+  confirmed
+  duplicate
+  ignored
+}
+
+enum BudgetScope {
+  category
+  account
+  credit_cycle
+}
+
+enum GoalStatus {
+  active
+  completed
+  paused
+}
+
+enum InstallmentStatus {
+  active
+  completed
+  cancelled
+}
+
+enum ImportSource {
+  screenshot
+  pdf
+}
+
+enum ImportBatchStatus {
+  processing
+  review
+  completed
+  failed
+}
+
+enum ImportItemStatus {
+  pending
+  confirmed
+  ignored
+  duplicate
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  accounts         Account[]
+  categories       Category[]
+  incomeEvents     IncomeEvent[]
+  transactions     Transaction[]
+  budgets          Budget[]
+  goals            Goal[]
+  installmentPlans InstallmentPlan[]
+  importBatches    ImportBatch[]
+}
+
+model Account {
+  id                 String             @id @default(cuid())
+  userId             String
+  name               String
+  type               AccountType
+  currentBalanceCents Int               @default(0)
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditAccount      CreditAccount?
+  allocations        Allocation[]
+  transactions       Transaction[]
+  budgets            Budget[]
+  installmentPlans   InstallmentPlan[]
+
+  @@index([userId, type])
+}
+
+model CreditAccount {
+  id                  String            @id @default(cuid())
+  accountId           String            @unique
+  issuer              String
+  creditLimitCents    Int?
+  cutoffDay           Int
+  paymentDueDay       Int
+  personalBudgetCents Int
+  account             Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  cycles              CreditCardCycle[]
+}
+
+model CreditCardCycle {
+  id                   String          @id @default(cuid())
+  creditAccountId      String
+  startDate            DateTime
+  endDate              DateTime
+  paymentDueDate       DateTime
+  budgetAmountCents    Int
+  statementAmountCents Int?
+  paidAmountCents      Int?
+  status               CycleStatus     @default(open)
+  creditAccount        CreditAccount   @relation(fields: [creditAccountId], references: [id], onDelete: Cascade)
+  transactions         Transaction[]
+  budgets              Budget[]
+
+  @@index([creditAccountId, startDate, endDate])
+}
+
+model IncomeEvent {
+  id          String       @id @default(cuid())
+  userId      String
+  amountCents Int
+  receivedAt  DateTime
+  source      String
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allocations Allocation[]
+
+  @@index([userId, receivedAt])
+}
+
+model Allocation {
+  id            String      @id @default(cuid())
+  incomeEventId String
+  accountId     String
+  amountCents   Int
+  incomeEvent   IncomeEvent @relation(fields: [incomeEventId], references: [id], onDelete: Cascade)
+  account       Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([incomeEventId])
+  @@index([accountId])
+}
+
+model Transaction {
+  id                 String                @id @default(cuid())
+  userId             String
+  accountId          String
+  creditCardCycleId  String?
+  categoryId         String?
+  date               DateTime
+  postedDate         DateTime?
+  merchantRaw        String?
+  merchantNormalized String?
+  description        String?
+  amountCents        Int
+  direction          TransactionDirection
+  paymentMethod      PaymentMethod
+  source             TransactionSource     @default(manual)
+  status             TransactionStatus     @default(confirmed)
+  fingerprint        String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account            Account               @relation(fields: [accountId], references: [id])
+  creditCardCycle    CreditCardCycle?      @relation(fields: [creditCardCycleId], references: [id])
+  category           Category?             @relation(fields: [categoryId], references: [id])
+  duplicateImportItems ImportItem[]         @relation("DuplicateTransaction")
+
+  @@unique([userId, fingerprint])
+  @@index([userId, date])
+  @@index([accountId, date])
+  @@index([creditCardCycleId])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  userId       String
+  name         String
+  color        String?
+  isSystem     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+  importItems  ImportItem[]
+
+  @@unique([userId, name])
+}
+
+model Budget {
+  id                String           @id @default(cuid())
+  userId            String
+  scope             BudgetScope
+  categoryId        String?
+  accountId         String?
+  creditCardCycleId String?
+  amountCents       Int
+  periodStart       DateTime
+  periodEnd         DateTime
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category          Category?        @relation(fields: [categoryId], references: [id])
+  account           Account?         @relation(fields: [accountId], references: [id])
+  creditCardCycle   CreditCardCycle? @relation(fields: [creditCardCycleId], references: [id])
+
+  @@index([userId, periodStart, periodEnd])
+}
+
+model Goal {
+  id                 String     @id @default(cuid())
+  userId             String
+  name               String
+  targetAmountCents  Int
+  currentAmountCents Int        @default(0)
+  targetDate         DateTime?
+  status             GoalStatus @default(active)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model InstallmentPlan {
+  id                    String            @id @default(cuid())
+  userId                String
+  accountId             String
+  merchant              String
+  originalAmountCents   Int
+  monthlyAmountCents    Int
+  totalInstallments     Int
+  currentInstallment    Int
+  startDate             DateTime
+  endDate               DateTime?
+  status                InstallmentStatus @default(active)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account               Account           @relation(fields: [accountId], references: [id])
+
+  @@index([userId, status])
+  @@index([accountId])
+}
+
+model ImportBatch {
+  id         String            @id @default(cuid())
+  userId     String
+  source     ImportSource
+  status     ImportBatchStatus @default(processing)
+  uploadedAt DateTime          @default(now())
+  rawText    String?
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      ImportItem[]
+
+  @@index([userId, uploadedAt])
+}
+
+model ImportItem {
+  id                     String           @id @default(cuid())
+  importBatchId          String
+  suggestedCategoryId    String?
+  duplicateTransactionId String?
+  detectedDate           DateTime?
+  detectedMerchant       String?
+  detectedAmountCents    Int?
+  status                 ImportItemStatus @default(pending)
+  importBatch            ImportBatch      @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  suggestedCategory      Category?        @relation(fields: [suggestedCategoryId], references: [id])
+  duplicateTransaction   Transaction?     @relation("DuplicateTransaction", fields: [duplicateTransactionId], references: [id])
+
+  @@index([importBatchId])
+  @@index([duplicateTransactionId])
+}
