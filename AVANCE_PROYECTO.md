@@ -19,12 +19,14 @@ Stack actualmente configurado:
 
 Estado importante:
 
-- La interfaz está maquetada con datos mock.
+- La interfaz está maquetada y alimentada por datos reales desde Supabase.
 - La base de datos está modelada en Prisma.
 - Ya existe conexión Supabase configurada vía `.env.local`.
 - Ya se aplicó la migración inicial en Supabase.
 - Ya se aplicó una migración de seguridad para activar RLS y revocar acceso por Data API.
 - Prisma Client ya puede consultar la base con `@prisma/adapter-pg`.
+- La pantalla principal ya lee datos reales desde Supabase vía Prisma.
+- Ya existe seed idempotente para datos iniciales reales.
 - Todavía no hay server actions ni API routes conectadas a Prisma.
 - Todavía no hay autenticación.
 
@@ -189,8 +191,7 @@ Incluye:
 
 Pendiente:
 
-- Leer datos desde Prisma.
-- Calcular datos con servicios de dominio.
+- Reemplazar cálculos temporales por servicios de dominio completos.
 - Alertas reales por presupuesto.
 - Navegación hacia vistas detalle reales.
 
@@ -210,7 +211,7 @@ Incluye:
 Pendiente:
 
 - Calcular ciclo real por `cutoffDay`.
-- Asociar transacciones al ciclo correcto.
+- Asociar nuevas transacciones al ciclo correcto al guardar.
 - Mostrar varias tarjetas dinámicamente.
 - Registrar pagos y cierre de ciclo.
 
@@ -308,7 +309,9 @@ Pantallas definidas en `proyect.md` pero no implementadas visualmente:
 - `components/ui/button.tsx`: botón compatible con patrón shadcn/ui.
 - `components/ui/card.tsx`: superficie base para cards.
 - `components/finance-app.tsx`: app mobile-first con navegación local.
-- `lib/finance-data.ts`: datos semilla/mock.
+- `lib/finance-snapshot.ts`: consulta server-side que arma el estado de UI desde Prisma.
+- `lib/db.ts`: Prisma Client con `@prisma/adapter-pg`.
+- `prisma/seed.cjs`: seed idempotente de datos iniciales reales.
 
 ### PWA
 
@@ -425,14 +428,22 @@ Implementar:
 
 ### 6.7 Dashboard desde base de datos
 
-Reemplazar `financeSnapshot` por consultas reales:
+Estado: primera versión implementada.
+
+Ya se reemplazó `financeSnapshot` por `getFinanceSnapshot()`:
 
 - Query de resumen de quincena.
 - Query de sobres y saldos.
 - Query de tarjetas y ciclos abiertos.
-- Query de próximos pagos.
+- Query de próximos pagos derivados de MSI y ciclos.
 - Query de movimientos recientes.
 - Query de meta de ahorro.
+
+Pendiente:
+
+- Extraer cálculos a servicios de dominio testeables.
+- Agregar modelos para pagos recurrentes no MSI.
+- Agregar filtros por periodo real.
 
 ### 6.8 Autenticación
 
@@ -476,18 +487,13 @@ Backend pendiente:
 
 ## 7. Orden recomendado desde aquí
 
-1. Conectar Supabase con `.env`.
-2. Ejecutar migración inicial.
-3. Crear `lib/db.ts`.
-4. Crear seed inicial.
-5. Reemplazar dashboard mock por queries reales.
-6. Implementar creación de gasto manual.
-7. Implementar ingreso + distribución.
-8. Implementar cálculo de ciclos de tarjeta.
-9. Implementar tarjetas reales y presupuestos.
-10. Implementar autenticación.
-11. Implementar reportes básicos.
-12. Después iniciar OCR/importaciones.
+1. Implementar creación de gasto manual.
+2. Implementar ingreso + distribución.
+3. Implementar cálculo de ciclos de tarjeta.
+4. Implementar tarjetas reales y presupuestos.
+5. Implementar autenticación.
+6. Implementar reportes básicos.
+7. Después iniciar OCR/importaciones.
 
 ## 8. Comandos de verificación actuales
 
@@ -497,6 +503,7 @@ Estos comandos ya pasan en el estado actual:
 npm run build
 npx prisma validate
 npm run prisma:generate
+npm run prisma:seed
 ```
 
 Migración inicial ya ejecutada:

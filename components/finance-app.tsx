@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { financeSnapshot } from "@/lib/finance-data";
+import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 
 const FT = {
   bg: "#06080c",
@@ -247,25 +247,33 @@ function TabBar({ active, onNavigate }: { active: Screen; onNavigate: (screen: S
   );
 }
 
-export function FinanceApp() {
+export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
   const [screen, setScreen] = useState<Screen>("home");
 
   return (
     <AppShell active={screen} onNavigate={setScreen}>
-      {screen === "home" ? <Dashboard /> : null}
-      {screen === "cards" ? <CardDetail /> : null}
-      {screen === "env" ? <Envelopes /> : null}
+      {screen === "home" ? <Dashboard data={snapshot} /> : null}
+      {screen === "cards" ? <CardDetail data={snapshot} /> : null}
+      {screen === "env" ? <Envelopes data={snapshot} /> : null}
       {screen === "add" ? <ExpenseForm /> : null}
-      {screen === "goal" ? <Distribution /> : null}
+      {screen === "goal" ? <Distribution data={snapshot} /> : null}
     </AppShell>
   );
 }
 
-function Dashboard() {
-  const data = financeSnapshot;
-  const libreUsado = 1430;
+function Dashboard({ data }: { data: FinanceSnapshot }) {
   const libreTotal = data.allocation.libre;
+  const libreBalance = data.envelopes.find((envelope) => envelope.name === "Libre")?.balance ?? 0;
+  const libreUsado = Math.max(0, libreTotal - libreBalance);
   const goal = data.goals.ahorro;
+  const committed = data.payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const cardCommitted = data.creditCards.reduce((sum, card) => sum + card.used, 0);
+  const fixedCommitted = data.payments
+    .filter((payment) => payment.chip === "Fijos")
+    .reduce((sum, payment) => sum + payment.amount, 0);
+  const msiCommitted = data.payments
+    .filter((payment) => payment.chip === "MSI")
+    .reduce((sum, payment) => sum + payment.amount, 0);
 
   return (
     <>
@@ -332,7 +340,7 @@ function Dashboard() {
               <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[#3DD68C]">
                 <ArrowUp size={12} />
                 <span className="font-mono tabular-nums">+{money(goal.monthlyDelta)}</span>
-                <span className="text-[#6a7384]">este mes · llegas en sep ’26</span>
+                <span className="text-[#6a7384]">este mes</span>
               </div>
             </div>
             <Ring size={70} stroke={7} value={goal.currentAmount / goal.targetAmount} color={FT.pos}>
@@ -372,19 +380,19 @@ function Dashboard() {
             <div>
               <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Dinero comprometido</div>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="font-mono text-2xl font-semibold tabular-nums">$7,027</span>
+                <span className="font-mono text-2xl font-semibold tabular-nums">{money(committed)}</span>
                 <span className="text-[12px] text-[#6a7384]">hasta corte</span>
               </div>
             </div>
             <Tag color={FT.warn} bg={FT.warnSoft}>
-              4 pagos
+              {data.payments.length} pagos
             </Tag>
           </div>
           <Bars
             data={[
-              { label: "Tarjetas", value: 5127, color: FT.accent },
-              { label: "Pagos fijos", value: 1900, color: "#8B6CF0" },
-              { label: "MSI activos", value: 580, color: FT.warn },
+              { label: "Tarjetas", value: cardCommitted, color: FT.accent },
+              { label: "Pagos fijos", value: fixedCommitted, color: "#8B6CF0" },
+              { label: "MSI activos", value: msiCommitted, color: FT.warn },
             ]}
           />
         </Card>
@@ -545,16 +553,39 @@ function Bars({ data }: { data: { label: string; value: number; color: string }[
   );
 }
 
-function CardDetail() {
-  const card = financeSnapshot.creditCards[0];
+function CardDetail({ data }: { data: FinanceSnapshot }) {
+  const card = data.creditCards[0] ?? {
+    issuer: "Sin tarjeta",
+    dot: FT.accent,
+    daysToClose: 0,
+    used: 0,
+    budget: 1,
+    limit: 0,
+    cycleLabel: "Sin ciclo abierto",
+    paymentDue: "Sin fecha",
+  };
   const pct = card.used / card.budget;
-  const categories = [
-    { label: "Transporte", value: 1240, color: FT.accent },
-    { label: "Comida/salidas", value: 980, color: "#8B6CF0" },
-    { label: "Tools/subs", value: 612, color: "#3DD6C9" },
-    { label: "MSI", value: 580, color: FT.warn },
-    { label: "Libre", value: 435, color: FT.danger },
-  ];
+  const categoryColor: Record<string, string> = {
+    Transporte: FT.accent,
+    "Comida/salidas": "#8B6CF0",
+    "Tools/subs": "#3DD6C9",
+    MSI: FT.warn,
+    Libre: FT.danger,
+  };
+  const categories = Object.values(
+    data.transactions
+      .filter((transaction) => !transaction.income && transaction.amount < 0)
+      .reduce<Record<string, { label: string; value: number; color: string }>>((acc, transaction) => {
+        acc[transaction.cat] ??= {
+          label: transaction.cat,
+          value: 0,
+          color: categoryColor[transaction.cat] ?? FT.textDim,
+        };
+        acc[transaction.cat].value += Math.abs(transaction.amount);
+        return acc;
+      }, {}),
+  );
+  const installmentRows = data.payments.filter((payment) => payment.chip === "MSI" || payment.chip === "Fijos");
 
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 pb-32 pt-[calc(env(safe-area-inset-top)+56px)]">
@@ -627,14 +658,16 @@ function CardDetail() {
         </Card>
       </div>
       <div>
-        <SectionHeader title="MSI activos" action="3 planes →" />
+        <SectionHeader title="MSI activos" action={`${installmentRows.length} planes →`} />
         <Card className="overflow-hidden">
-          {[
-            ["Apple · Audífonos", 400, 6, 12],
-            ["Liverpool · Ropa", 350, 2, 6],
-            ["Amazon · Monitor", 645, 3, 6],
-          ].map(([merchant, monthly, cur, tot], index) => (
-            <MsiRow key={String(merchant)} merchant={String(merchant)} monthly={Number(monthly)} cur={Number(cur)} tot={Number(tot)} last={index === 2} />
+          {installmentRows.map((payment, index) => (
+            <MsiRow
+              key={payment.label}
+              merchant={payment.label}
+              monthly={payment.amount}
+              sub={payment.sub}
+              last={index === installmentRows.length - 1}
+            />
           ))}
         </Card>
       </div>
@@ -642,7 +675,7 @@ function CardDetail() {
   );
 }
 
-function MsiRow({ merchant, monthly, cur, tot, last }: { merchant: string; monthly: number; cur: number; tot: number; last?: boolean }) {
+function MsiRow({ merchant, monthly, sub, last }: { merchant: string; monthly: number; sub: string; last?: boolean }) {
   return (
     <div className={`px-4 py-3.5 ${last ? "" : "border-b border-white/[0.06]"}`}>
       <div className="flex items-baseline justify-between">
@@ -651,18 +684,22 @@ function MsiRow({ merchant, monthly, cur, tot, last }: { merchant: string; month
       </div>
       <div className="mt-2 flex items-center gap-2">
         <div className="flex-1">
-          <ProgressBar pct={(cur / tot) * 100} color={FT.warn} height={4} />
+          <ProgressBar pct={60} color={FT.warn} height={4} />
         </div>
-        <div className="font-mono text-[11px] text-[#6a7384]">
-          {cur}/{tot} · resta {money((tot - cur) * monthly)}
-        </div>
+        <div className="text-[11px] text-[#6a7384]">{sub}</div>
       </div>
     </div>
   );
 }
 
-function Envelopes() {
-  const total = financeSnapshot.envelopes.reduce((a, s) => a + s.balance, 0) + financeSnapshot.bankAccounts.reduce((a, c) => a + c.balance, 0);
+function Envelopes({ data }: { data: FinanceSnapshot }) {
+  const total = data.envelopes.reduce((a, s) => a + s.balance, 0) + data.bankAccounts.reduce((a, c) => a + c.balance, 0);
+  const savingsTotal = data.envelopes.find((envelope) => envelope.name === "Ahorro")?.balance ?? 0;
+  const committedTotal = data.envelopes
+    .filter((envelope) => envelope.name === "Pago tarjetas" || envelope.name === "Fijos")
+    .reduce((sum, envelope) => sum + envelope.balance, 0);
+  const libreTotal = data.envelopes.find((envelope) => envelope.name === "Libre")?.balance ?? 0;
+  const bankTotal = data.bankAccounts.reduce((sum, account) => sum + account.balance, 0);
 
   return (
     <>
@@ -674,17 +711,17 @@ function Envelopes() {
       <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-auto px-4 pb-32">
         <Card className="p-[18px]">
           <div className="flex items-center gap-4">
-            <DonutSobres />
+            <DonutSobres data={data} />
             <div className="flex-1">
               <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Total disponible</div>
               <div className="mt-1">
                 <BigNum value={total} size={28} />
               </div>
               <div className="mt-2 flex flex-col gap-1">
-                <Legend color={FT.pos} label="Intocable" value={11000} />
-                <Legend color={FT.accent} label="Comprometido" value={7027} />
-                <Legend color={FT.warn} label="Libre" value={1820} />
-                <Legend color={FT.textDim} label="Cuentas" value={8847} />
+                <Legend color={FT.pos} label="Intocable" value={savingsTotal} />
+                <Legend color={FT.accent} label="Comprometido" value={committedTotal} />
+                <Legend color={FT.warn} label="Libre" value={libreTotal} />
+                <Legend color={FT.textDim} label="Cuentas" value={bankTotal} />
               </div>
             </div>
           </div>
@@ -692,7 +729,7 @@ function Envelopes() {
         <div>
           <SectionHeader title="Sobres" action="Reordenar →" />
           <div className="flex flex-col gap-2.5">
-            {financeSnapshot.envelopes.map((envelope) => (
+            {data.envelopes.map((envelope) => (
               <EnvelopeCard key={envelope.name} {...envelope} />
             ))}
           </div>
@@ -700,8 +737,8 @@ function Envelopes() {
         <div>
           <SectionHeader title="Cuentas bancarias" action="+ Agregar" />
           <Card className="overflow-hidden">
-            {financeSnapshot.bankAccounts.map((account, index) => (
-              <div key={account.name} className={`flex items-center gap-3 px-4 py-3.5 ${index === financeSnapshot.bankAccounts.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
+            {data.bankAccounts.map((account, index) => (
+              <div key={account.name} className={`flex items-center gap-3 px-4 py-3.5 ${index === data.bankAccounts.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <div className="grid size-[38px] place-items-center rounded-[10px] border border-white/[0.06] bg-[#161b25] text-[13px] font-semibold text-[#a4adbe]">
                   <Landmark size={16} />
                 </div>
@@ -742,8 +779,8 @@ function Legend({ color, label, value }: { color: string; label: string; value: 
   );
 }
 
-function DonutSobres() {
-  const items = [...financeSnapshot.envelopes, ...financeSnapshot.bankAccounts.map((account) => ({ ...account, color: FT.textDim }))];
+function DonutSobres({ data }: { data: FinanceSnapshot }) {
+  const items = [...data.envelopes, ...data.bankAccounts.map((account) => ({ ...account, color: FT.textDim }))];
   const total = items.reduce((a, s) => a + s.balance, 0);
   const size = 116;
   const stroke = 14;
@@ -795,8 +832,8 @@ function EnvelopeCard({ name, balance, color, note, goal, locked }: { name: stri
   );
 }
 
-function Distribution() {
-  const ingreso = financeSnapshot.income.amount;
+function Distribution({ data }: { data: FinanceSnapshot }) {
+  const ingreso = data.income.amount || 1;
   const [vals, setVals] = useState({ pago: 2500, ahorro: 2500, fijos: 1000, libre: 3250 });
   const total = vals.pago + vals.ahorro + vals.fijos + vals.libre;
   const diff = ingreso - total;

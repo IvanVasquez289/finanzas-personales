@@ -26,6 +26,36 @@ La app corre en:
 http://localhost:3000
 ```
 
+## Probar en iPhone como PWA
+
+### Opción rápida en red local
+
+1. Ejecuta:
+
+```bash
+npm run dev -- --hostname 0.0.0.0
+```
+
+2. Busca tu IP local:
+
+```bash
+ipconfig getifaddr en0
+```
+
+3. En el iPhone, conectado a la misma Wi-Fi, abre:
+
+```text
+http://TU_IP_LOCAL:3000
+```
+
+4. En Safari: compartir → `Agregar a pantalla de inicio`.
+
+Limitación: en local será HTTP. Sirve para revisar diseño y navegación, pero para una PWA más fiel conviene HTTPS.
+
+### Opción recomendada
+
+Desplegar en Vercel. Vercel da HTTPS, dominio temporal y una experiencia más cercana a la PWA final en iPhone.
+
 ## Base de datos
 
 Copia `.env.example` a `.env.local` y reemplaza `[YOUR-PASSWORD]` con la contraseña real de Supabase.
@@ -64,7 +94,8 @@ Los archivos originales exportados desde Claude Design se conservan en `project/
 
 - `app/page.tsx`
 - `components/finance-app.tsx`
-- `lib/finance-data.ts`
+- `lib/finance-snapshot.ts`
+- `lib/db.ts`
 
 Pantallas migradas:
 
@@ -79,4 +110,5 @@ Pantallas migradas:
 ```bash
 npm run build
 npx prisma validate
+npm run prisma:seed
 ```
