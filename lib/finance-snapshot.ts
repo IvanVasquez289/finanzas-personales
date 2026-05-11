@@ -40,14 +40,22 @@ export type FinanceSnapshot = {
     sub: string;
   }[];
   creditCards: {
+    cycleId?: string;
     issuer: string;
     dot: string;
     daysToClose: number;
     used: number;
+    paid: number;
+    due: number;
     budget: number;
     limit: number;
     cycleLabel: string;
     paymentDue: string;
+    categorySpend: {
+      label: string;
+      value: number;
+      color: string;
+    }[];
   }[];
   payments: {
     label: string;
@@ -121,6 +129,19 @@ function envelopeMeta(name: string) {
 function cardColor(name: string) {
   if (name.toLowerCase().includes("liverpool")) return "#E94B6A";
   return "#2A5BFF";
+}
+
+function categoryColor(name: string) {
+  const colors: Record<string, string> = {
+    Transporte: "#2A5BFF",
+    "Comida/salidas": "#8B6CF0",
+    "Tools/subs": "#3DD6C9",
+    MSI: "#F5B544",
+    Libre: "#E94B6A",
+    Fijos: "#3DD68C",
+  };
+
+  return colors[name] ?? "#a4adbe";
 }
 
 function daysUntil(date: Date) {
@@ -226,16 +247,28 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
     const used = cycle
       ? cycle.transactions.reduce((sum, transaction) => sum + toAmount(transaction.amountCents), 0)
       : 0;
+    const categorySpend = Object.values(
+      (cycle?.transactions ?? []).reduce<Record<string, { label: string; value: number; color: string }>>((acc, transaction) => {
+        const label = transaction.category?.name ?? "Sin categoría";
+        acc[label] ??= { label, value: 0, color: categoryColor(label) };
+        acc[label].value += toAmount(transaction.amountCents);
+        return acc;
+      }, {}),
+    );
 
     return {
       issuer: credit.account.name,
+      cycleId: cycle?.id,
       dot: cardColor(credit.account.name),
       daysToClose: cycle ? daysUntil(cycle.endDate) : 0,
       used,
+      paid: toAmount(cycle?.paidAmountCents),
+      due: Math.max(0, used - toAmount(cycle?.paidAmountCents)),
       budget: cycle ? toAmount(cycle.budgetAmountCents) : toAmount(credit.personalBudgetCents),
       limit: toAmount(credit.creditLimitCents),
       cycleLabel: cycle ? formatCycle(cycle.startDate, cycle.endDate) : "Sin ciclo abierto",
       paymentDue: cycle ? formatShortDate(cycle.paymentDueDate) : "Sin fecha",
+      categorySpend,
     };
   });
 
@@ -252,10 +285,10 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
       label: card.issuer,
       sub: "Pago estimado del ciclo",
       date: card.paymentDue,
-      amount: card.used,
+      amount: card.due,
       chip: "Tarjeta",
       chipColor: card.dot,
-      muted: card.used === 0,
+      muted: card.due === 0,
     })),
   ];
 

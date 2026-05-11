@@ -44,7 +44,7 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
           </div>
         }
       />
-      <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 pb-32">
+      <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll">
         <Card className="relative overflow-hidden rounded-[22px] p-[18px]">
           <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_0%_0%,rgba(42,91,255,0.18)_0%,rgba(42,91,255,0)_55%)]" />
           <div className="absolute inset-0 opacity-40 [background:linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px)_0_0/100%_28px]" />

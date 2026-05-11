@@ -18,8 +18,8 @@ export function BottomTabBar({
   ];
 
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 md:absolute">
-      <div className="pointer-events-auto flex items-center justify-around rounded-[28px] border border-white/[0.08] bg-[#080b12]/78 px-2 py-2 shadow-[0_-10px_34px_rgba(0,0,0,0.38)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#080b12]/68">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-[max(env(safe-area-inset-bottom),6px)] z-30 mx-auto max-w-[430px] px-3 md:absolute">
+      <div className="pointer-events-auto flex items-center justify-around rounded-[26px] border border-white/[0.08] bg-[#080b12]/78 px-2 py-1.5 shadow-[0_-10px_34px_rgba(0,0,0,0.38)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#080b12]/68">
         {items.map((item) => {
           const Icon = item.icon;
           if (item.isAdd) {

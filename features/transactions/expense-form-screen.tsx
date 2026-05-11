@@ -43,7 +43,7 @@ export function ExpenseFormScreen({
   }, [onSaved, router, state.ok]);
 
   return (
-    <form action={formAction} className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+    <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
       <input type="hidden" name="amount" value={amount} />
       <input type="hidden" name="categoryId" value={cat} />
       <input type="hidden" name="accountId" value={method} />
@@ -157,7 +157,7 @@ function Keypad({ value, setValue }: { value: string; setValue: (value: string) 
   };
 
   return (
-    <div className="border-t border-white/[0.06] bg-gradient-to-t from-[#0b0e14] to-[#0b0e14d9] px-3 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-2">
+    <div className="border-t border-white/[0.06] bg-gradient-to-t from-[#0b0e14] to-[#0b0e14d9] px-3 app-bottom-fixed pt-2">
       <div className="flex flex-col gap-1.5">
         {keys.map((row) => (
           <div key={row.join("")} className="flex gap-1.5">

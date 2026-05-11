@@ -210,11 +210,14 @@ Incluye:
 
 Pendiente:
 
-- Mostrar varias tarjetas dinámicamente.
-- Registrar pagos y cierre de ciclo.
+- Cierre formal de ciclo e histórico.
 
 Implementado:
 
+- Selector local para mostrar varias tarjetas dinámicamente.
+- Gasto por categoría calculado por tarjeta/ciclo seleccionado.
+- Primera acción para registrar pago de tarjeta contra el ciclo.
+- Descuento del pago desde el sobre `Pago tarjetas`.
 - Cálculo de ciclo real por `cutoffDay` y `paymentDueDay`.
 - Creación idempotente del ciclo actual al guardar un gasto de tarjeta.
 - Asociación automática de nuevas transacciones al ciclo calculado.
@@ -350,6 +353,7 @@ Pantallas definidas en `proyect.md` pero no implementadas visualmente:
 - `public/icon.svg`.
 - `public/sw.js`.
 - Registro de service worker en `components/service-worker-registration.tsx`.
+- Ajustes de viewport/safe area para iPhone en shell y navegación.
 
 ### Prisma
 
@@ -425,7 +429,7 @@ Implementar acciones para:
 - Actualizar presupuesto personal de tarjeta.
 - Crear meta de ahorro.
 - Crear plan MSI.
-- Marcar pago de tarjeta o pago fijo.
+- Marcar pago de tarjeta o pago fijo. Estado: primera versión implementada para tarjeta.
 
 ### 6.5 Validaciones
 

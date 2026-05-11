@@ -1,5 +1,7 @@
 "use client";
 
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, MoreHorizontal } from "lucide-react";
 import { Bars } from "@/components/finance/bars";
 import { BigNum } from "@/components/finance/big-num";
@@ -11,24 +13,40 @@ import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
+import { registerCardPaymentAction } from "./actions";
 
 export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
-  const card = data.creditCards[0] ?? {
+  const router = useRouter();
+  const [selectedCard, setSelectedCard] = useState(0);
+  const [paymentState, paymentAction, paymentPending] = useActionState(registerCardPaymentAction, {
+    ok: false,
+    message: "",
+  });
+  const card = data.creditCards[selectedCard] ?? data.creditCards[0] ?? {
     issuer: "Sin tarjeta",
     dot: FT.accent,
     daysToClose: 0,
     used: 0,
+    paid: 0,
+    due: 0,
     budget: 1,
     limit: 0,
     cycleLabel: "Sin ciclo abierto",
     paymentDue: "Sin fecha",
+    categorySpend: [],
   };
   const pct = card.budget > 0 ? card.used / card.budget : 0;
-  const categories = buildCategoryBars(data);
+  const categories = card.categorySpend;
   const installmentRows = data.payments.filter((payment) => payment.chip === "MSI" || payment.chip === "Fijos");
 
+  useEffect(() => {
+    if (!paymentState.ok) return;
+
+    router.refresh();
+  }, [paymentState.ok, router]);
+
   return (
-    <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 pb-32 pt-[calc(env(safe-area-inset-top)+56px)]">
+    <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
       <div className="flex items-center justify-between">
         <Button variant="secondary" size="icon" aria-label="Regresar">
           <ArrowLeft size={16} />
@@ -38,6 +56,29 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
           <MoreHorizontal size={18} />
         </Button>
       </div>
+      {data.creditCards.length > 1 ? (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {data.creditCards.map((item, index) => (
+            <button
+              key={item.issuer}
+              type="button"
+              className="flex min-w-[136px] items-center gap-2 rounded-2xl border px-3 py-2 text-left"
+              style={{
+                background: index === selectedCard ? `${item.dot}18` : "rgba(255,255,255,0.04)",
+                borderColor: index === selectedCard ? `${item.dot}55` : "rgba(255,255,255,0.08)",
+                color: index === selectedCard ? FT.text : FT.textDim,
+              }}
+              onClick={() => setSelectedCard(index)}
+            >
+              <span className="size-2.5 rounded-full" style={{ background: item.dot }} />
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] font-semibold">{item.issuer}</span>
+                <span className="mt-0.5 block font-mono text-[11px] text-[#6a7384]">{money(item.used)} usados</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="relative h-[196px] overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#1E3DB0_0%,#2A5BFF_55%,#5C84FF_100%)] p-5 text-white shadow-[0_12px_40px_rgba(42,91,255,0.32)]">
         <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_100%_0%,rgba(255,255,255,0.25)_0%,transparent_60%)]" />
         <div className="relative flex h-full flex-col justify-between">
@@ -76,6 +117,10 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
               de <span className="font-mono">{money(card.budget)}</span> · te quedan{" "}
               <span className="font-mono text-[#eef2f8]">{money(card.budget - card.used, 2)}</span>
             </div>
+            <div className="mt-1 text-[12px] text-[#6a7384]">
+              pagado <span className="font-mono text-[#eef2f8]">{money(card.paid)}</span> · por pagar{" "}
+              <span className="font-mono text-[#eef2f8]">{money(card.due)}</span>
+            </div>
           </div>
           <Ring size={68} stroke={7} value={pct} color={pct > 0.85 ? FT.danger : pct > 0.7 ? FT.warn : FT.accent}>
             <div className="font-mono text-[13px] font-semibold">{Math.round(pct * 100)}%</div>
@@ -90,11 +135,29 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
             <span className="text-right">{card.paymentDue}<br /><span className="text-[#444c5b]">pago</span></span>
           </div>
         </div>
+        {card.cycleId ? (
+          <form action={paymentAction} className="mt-4">
+            <input type="hidden" name="cycleId" value={card.cycleId} />
+            <input type="hidden" name="amount" value={card.due} />
+            <Button className="w-full" disabled={paymentPending || card.due <= 0}>
+              {card.due > 0 ? `Registrar pago de ${money(card.due)}` : "Ciclo pagado"}
+            </Button>
+            {paymentState.message ? (
+              <div className="mt-2 text-center text-[12px]" style={{ color: paymentState.ok ? FT.pos : FT.danger }}>
+                {paymentState.message}
+              </div>
+            ) : null}
+          </form>
+        ) : null}
       </Card>
       <div>
         <SectionHeader title="Por categoría · este ciclo" />
         <Card className="p-4">
-          <Bars data={categories} />
+          {categories.length > 0 ? (
+            <Bars data={categories} />
+          ) : (
+            <div className="py-5 text-center text-[13px] text-[#6a7384]">Sin gastos registrados en este ciclo.</div>
+          )}
         </Card>
       </div>
       <div>
@@ -112,30 +175,6 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
         </Card>
       </div>
     </div>
-  );
-}
-
-function buildCategoryBars(data: FinanceSnapshot) {
-  const categoryColor: Record<string, string> = {
-    Transporte: FT.accent,
-    "Comida/salidas": "#8B6CF0",
-    "Tools/subs": "#3DD6C9",
-    MSI: FT.warn,
-    Libre: FT.danger,
-  };
-
-  return Object.values(
-    data.transactions
-      .filter((transaction) => !transaction.income && transaction.amount < 0)
-      .reduce<Record<string, { label: string; value: number; color: string }>>((acc, transaction) => {
-        acc[transaction.cat] ??= {
-          label: transaction.cat,
-          value: 0,
-          color: categoryColor[transaction.cat] ?? FT.textDim,
-        };
-        acc[transaction.cat].value += Math.abs(transaction.amount);
-        return acc;
-      }, {}),
   );
 }
 

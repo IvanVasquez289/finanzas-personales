@@ -44,3 +44,25 @@ textarea {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+.app-viewport {
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+.app-screen {
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+.app-top {
+  padding-top: calc(env(safe-area-inset-top) + 28px);
+}
+
+.app-bottom-scroll {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 96px);
+}
+
+.app-bottom-fixed {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 78px);
+}

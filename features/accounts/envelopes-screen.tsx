@@ -29,7 +29,7 @@ export function EnvelopesScreen({ data }: { data: FinanceSnapshot }) {
         title="Tus sobres"
         right={<Button variant="secondary" size="icon" aria-label="Agregar sobre"><Plus size={18} /></Button>}
       />
-      <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-auto px-4 pb-32">
+      <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-auto px-4 app-bottom-scroll">
         <Card className="p-[18px]">
           <div className="flex items-center gap-4">
             <EnvelopeDonut data={data} />

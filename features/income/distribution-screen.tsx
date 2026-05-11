@@ -52,7 +52,7 @@ export function DistributionScreen({
   }, [onSaved, router, state.ok]);
 
   return (
-    <form action={formAction} className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+    <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
       <input type="hidden" name="amount" value={ingreso} />
       <input type="hidden" name="pago" value={vals.pago} />
       <input type="hidden" name="ahorro" value={vals.ahorro} />
@@ -97,7 +97,7 @@ export function DistributionScreen({
           </div>
         ) : null}
       </div>
-      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-32">
+      <div className="no-scrollbar flex-1 overflow-auto px-4 app-bottom-scroll">
         <div className="flex flex-col gap-2.5">
           {sobres.map(({ key, ...sobre }) => (
             <AllocationSlider
@@ -110,7 +110,7 @@ export function DistributionScreen({
           ))}
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#06080c] from-60% to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-3">
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#06080c] from-60% to-transparent px-4 app-bottom-fixed pt-3">
         <Button className="w-full" disabled={diff !== 0 || pending}>
           {pending ? "Confirmando" : "Confirmar distribución"}
         </Button>
