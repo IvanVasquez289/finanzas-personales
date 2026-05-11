@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { CreditAccount, Prisma } from "@prisma/client";
 import { z } from "zod";
+import { cycleIdFor, getCreditCycleDates } from "@/lib/credit-cycles";
 import { prisma } from "@/lib/db";
 
 export type CreateExpenseState = {
@@ -77,11 +79,9 @@ export async function createExpenseAction(
   }
 
   const now = new Date();
-  const cycle = account.creditAccount?.cycles.find(
-    (item) => now >= item.startDate && now <= item.endDate,
-  ) ?? account.creditAccount?.cycles[0];
+  const isCreditAccount = account.type === "credit_card" || account.type === "store_card";
 
-  if ((account.type === "credit_card" || account.type === "store_card") && !cycle) {
+  if (isCreditAccount && !account.creditAccount) {
     return { ok: false, message: "La tarjeta seleccionada no tiene ciclo abierto." };
   }
 
@@ -95,11 +95,15 @@ export async function createExpenseAction(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const creditCycle = account.creditAccount
+        ? await getOrCreateCreditCycle(tx, account.creditAccount, now)
+        : null;
+
       await tx.transaction.create({
         data: {
           userId: user.id,
           accountId: account.id,
-          creditCardCycleId: cycle?.id,
+          creditCardCycleId: creditCycle?.id,
           categoryId: category.id,
           date: now,
           merchantRaw: parsed.data.merchant,
@@ -108,7 +112,7 @@ export async function createExpenseAction(
           amountCents,
           direction: "expense",
           paymentMethod:
-            account.type === "credit_card" || account.type === "store_card"
+            isCreditAccount
               ? "credit_card"
               : account.type === "cash"
                 ? "cash"
@@ -119,7 +123,7 @@ export async function createExpenseAction(
         },
       });
 
-      if (account.type !== "credit_card" && account.type !== "store_card") {
+      if (!isCreditAccount) {
         await tx.account.update({
           where: { id: account.id },
           data: { currentBalanceCents: { decrement: amountCents } },
@@ -137,6 +141,35 @@ export async function createExpenseAction(
   revalidatePath("/");
 
   return { ok: true, message: "Gasto guardado." };
+}
+
+async function getOrCreateCreditCycle(
+  tx: Prisma.TransactionClient,
+  credit: Pick<CreditAccount, "id" | "cutoffDay" | "paymentDueDay" | "personalBudgetCents">,
+  date: Date,
+) {
+  const dates = getCreditCycleDates(credit, date);
+  const id = cycleIdFor(credit.id, dates);
+
+  return tx.creditCardCycle.upsert({
+    where: { id },
+    update: {
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+      paymentDueDate: dates.paymentDueDate,
+      budgetAmountCents: credit.personalBudgetCents,
+      status: "open",
+    },
+    create: {
+      id,
+      creditAccountId: credit.id,
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+      paymentDueDate: dates.paymentDueDate,
+      budgetAmountCents: credit.personalBudgetCents,
+      status: "open",
+    },
+  });
 }
 
 function normalizeMerchant(value: string) {

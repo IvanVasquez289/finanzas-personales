@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getCreditCycleDates } from "@/lib/credit-cycles";
 
 export type FinanceSnapshot = {
   user: {
@@ -162,7 +163,6 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
         cycles: {
           where: { status: "open" },
           orderBy: { startDate: "desc" },
-          take: 1,
           include: {
             transactions: {
               where: { status: "confirmed", direction: "expense" },
@@ -217,7 +217,12 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
     });
 
   const creditCards = creditAccounts.map((credit) => {
-    const cycle = credit.cycles[0];
+    const currentCycleDates = getCreditCycleDates(credit);
+    const cycle = credit.cycles.find(
+      (item) =>
+        item.startDate.toISOString().slice(0, 10) === currentCycleDates.startDate.toISOString().slice(0, 10) &&
+        item.endDate.toISOString().slice(0, 10) === currentCycleDates.endDate.toISOString().slice(0, 10),
+    ) ?? credit.cycles[0];
     const used = cycle
       ? cycle.transactions.reduce((sum, transaction) => sum + toAmount(transaction.amountCents), 0)
       : 0;

@@ -25,7 +25,13 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
           onSaved={() => setScreen("home")}
         />
       ) : null}
-      {screen === "goal" ? <DistributionScreen data={snapshot} /> : null}
+      {screen === "goal" ? (
+        <DistributionScreen
+          data={snapshot}
+          onBack={() => setScreen("home")}
+          onSaved={() => setScreen("home")}
+        />
+      ) : null}
     </AppShell>
   );
 }

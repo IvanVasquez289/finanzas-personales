@@ -197,7 +197,7 @@ Pendiente:
 
 ### Tarjeta / ciclo actual
 
-Estado: maquetado.
+Estado: maquetado con cálculo inicial de ciclo.
 
 Incluye:
 
@@ -210,10 +210,15 @@ Incluye:
 
 Pendiente:
 
-- Calcular ciclo real por `cutoffDay`.
-- Asociar nuevas transacciones al ciclo correcto al guardar.
 - Mostrar varias tarjetas dinámicamente.
 - Registrar pagos y cierre de ciclo.
+
+Implementado:
+
+- Cálculo de ciclo real por `cutoffDay` y `paymentDueDay`.
+- Creación idempotente del ciclo actual al guardar un gasto de tarjeta.
+- Asociación automática de nuevas transacciones al ciclo calculado.
+- Selección del ciclo actual calculado para el resumen del dashboard.
 
 ### Sobres / cuentas
 
@@ -238,7 +243,7 @@ Pendiente:
 
 ### Distribución de quincena
 
-Estado: maquetado con interacción local.
+Estado: primera versión conectada a Prisma.
 
 Incluye:
 
@@ -250,10 +255,18 @@ Incluye:
 Pendiente:
 
 - Formulario real con React Hook Form y Zod.
-- Crear `IncomeEvent`.
-- Crear `Allocation`.
-- Actualizar saldos.
 - Plantillas de distribución editables.
+
+Implementado:
+
+- Validación básica con Zod.
+- Confirmación de distribución vía server action.
+- Upsert idempotente de `IncomeEvent` por día.
+- Upsert de `Allocation` por sobre.
+- Actualización de saldos por diferencia para evitar duplicados.
+- Actualización de avance de meta cuando cambia Ahorro.
+- Registro de transacción de ingreso quincenal.
+- Revalidación del dashboard después de confirmar.
 
 ### Registro de gasto
 
@@ -389,9 +402,9 @@ Crear seed para:
 
 Crear servicios puros para reglas financieras:
 
-- Calcular ciclo de tarjeta por fecha de corte.
-- Obtener ciclo actual por tarjeta.
-- Asignar transacción a ciclo.
+- Calcular ciclo de tarjeta por fecha de corte. Estado: primera versión implementada.
+- Obtener ciclo actual por tarjeta. Estado: primera versión implementada.
+- Asignar transacción a ciclo. Estado: primera versión implementada para gasto manual.
 - Calcular gasto por ciclo.
 - Calcular gasto por categoría.
 - Calcular dinero comprometido.
@@ -405,7 +418,7 @@ Crear servicios puros para reglas financieras:
 Implementar acciones para:
 
 - Crear ingreso quincenal.
-- Confirmar distribución de ingreso.
+- Confirmar distribución de ingreso. Estado: primera versión implementada.
 - Crear gasto manual. Estado: primera versión implementada.
 - Crear cuenta/sobre.
 - Crear tarjeta.

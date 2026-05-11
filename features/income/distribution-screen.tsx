@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, CreditCard, PiggyBank, WalletCards } from "lucide-react";
 import { AllocationSlider } from "@/components/income/allocation-slider";
 import { BigNum } from "@/components/finance/big-num";
@@ -11,14 +12,28 @@ import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
+import { confirmDistributionAction } from "./actions";
 
-export function DistributionScreen({ data }: { data: FinanceSnapshot }) {
+export function DistributionScreen({
+  data,
+  onBack,
+  onSaved,
+}: {
+  data: FinanceSnapshot;
+  onBack: () => void;
+  onSaved: () => void;
+}) {
+  const router = useRouter();
   const ingreso = data.income.amount || 1;
   const [vals, setVals] = useState({
     pago: data.allocation.pagoTarjetas,
     ahorro: data.allocation.ahorro,
     fijos: data.allocation.fijos,
     libre: data.allocation.libre,
+  });
+  const [state, formAction, pending] = useActionState(confirmDistributionAction, {
+    ok: false,
+    message: "",
   });
   const total = vals.pago + vals.ahorro + vals.fijos + vals.libre;
   const diff = ingreso - total;
@@ -29,12 +44,24 @@ export function DistributionScreen({ data }: { data: FinanceSnapshot }) {
     { key: "libre" as const, name: "Libre", sugerido: 3300, color: FT.warn, note: "Gastos variables · 14 días", icon: WalletCards },
   ];
 
+  useEffect(() => {
+    if (!state.ok) return;
+
+    router.refresh();
+    onSaved();
+  }, [onSaved, router, state.ok]);
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+    <form action={formAction} className="flex flex-1 flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+56px)]">
+      <input type="hidden" name="amount" value={ingreso} />
+      <input type="hidden" name="pago" value={vals.pago} />
+      <input type="hidden" name="ahorro" value={vals.ahorro} />
+      <input type="hidden" name="fijos" value={vals.fijos} />
+      <input type="hidden" name="libre" value={vals.libre} />
       <div className="flex items-center justify-between px-4 pb-4">
-        <Button variant="secondary" size="icon" aria-label="Regresar"><ArrowLeft size={16} /></Button>
+        <Button type="button" variant="secondary" size="icon" aria-label="Regresar" onClick={onBack}><ArrowLeft size={16} /></Button>
         <div className="text-[14px] text-[#a4adbe]">Paso 2 de 3</div>
-        <button className="text-[13px] font-medium text-[#2A5BFF]">Sugerencia</button>
+        <button type="button" className="text-[13px] font-medium text-[#2A5BFF]">Sugerencia</button>
       </div>
       <div className="px-5 pb-2">
         <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Quincena recibida</div>
@@ -64,6 +91,11 @@ export function DistributionScreen({ data }: { data: FinanceSnapshot }) {
             ]}
           />
         </Card>
+        {state.message ? (
+          <div className="mt-3 rounded-2xl border border-white/[0.08] bg-[#10141d] px-3.5 py-3 text-[13px]" style={{ color: state.ok ? FT.pos : FT.danger }}>
+            {state.message}
+          </div>
+        ) : null}
       </div>
       <div className="no-scrollbar flex-1 overflow-auto px-4 pb-32">
         <div className="flex flex-col gap-2.5">
@@ -79,10 +111,10 @@ export function DistributionScreen({ data }: { data: FinanceSnapshot }) {
         </div>
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#06080c] from-60% to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-3">
-        <Button className="w-full" disabled={diff !== 0}>
-          Confirmar distribución
+        <Button className="w-full" disabled={diff !== 0 || pending}>
+          {pending ? "Confirmando" : "Confirmar distribución"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
