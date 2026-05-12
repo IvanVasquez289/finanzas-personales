@@ -28,7 +28,7 @@ Estado importante:
 - [x] La pantalla principal ya lee datos reales desde Supabase vía Prisma.
 - [x] Ya existe seed idempotente para datos iniciales reales.
 - [x] Ya existe una primera server action conectada a Prisma para crear gastos manuales.
-- [ ] Todavía no hay autenticación.
+- [x] Ya existe autenticación simple con Better Auth en código.
 
 ### 1.1 Checklist de avance
 
@@ -52,18 +52,22 @@ Estado importante:
 - [x] Crear cálculo inicial de ciclo de tarjeta por fecha de corte.
 - [x] Asociar gastos de tarjeta al ciclo calculado.
 - [x] Crear fingerprint único para detectar duplicados exactos.
+- [x] Integrar Better Auth con rutas de login, registro y sesión server-side.
+- [x] Crear migración y modelos Prisma para Better Auth sin colisionar con tablas financieras.
+- [x] Proteger la pantalla principal con sesión y enlazar AuthUser con User financiero.
+- [x] Completar formularios del core diario con React Hook Form, fecha/hora y validaciones.
+- [x] Registrar MSI como `InstallmentPlan`.
+- [x] Permitir pagos parciales y cierre formal de ciclos.
+- [x] Capturar ingreso y fecha de recepción desde distribución.
 
 #### Parcial
 
-- [ ] Registro de gasto completo: falta fecha/hora editable, React Hook Form, MSI como `InstallmentPlan`, mejor confirmación visual y duplicados tolerantes.
-- [ ] Distribución de quincena completa: falta capturar nuevo ingreso desde pantalla, fecha de recepción, plantillas editables y React Hook Form.
-- [ ] Registro de pagos de tarjeta: falta cierre formal de ciclo, histórico y pagos parciales editables.
-- [ ] Dashboard con cálculos de dominio: falta extraer servicios puros, alertas, filtros y compromisos completos.
-- [ ] Saldos confiables de sobres/cuentas: falta derivarlos completamente desde movimientos, allocations, pagos y ajustes auditables.
+- [ ] Migración de Better Auth pendiente de aplicar en Supabase.
+- [ ] Dashboard con cálculos de dominio: faltan pruebas unitarias para blindar reglas.
+- [ ] Saldos de sobres/cuentas: falta separar ajustes manuales auditables como flujo propio.
 
 #### Pendiente
 
-- [ ] Autenticación simple.
 - [ ] Configuración inicial/onboarding.
 - [ ] CRUD de cuentas/sobres.
 - [ ] CRUD de tarjetas.

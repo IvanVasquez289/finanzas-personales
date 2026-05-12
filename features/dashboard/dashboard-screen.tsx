@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
+import { signOut } from "@/lib/auth-client";
 
 export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
   const libreTotal = data.allocation.libre;
@@ -39,9 +40,18 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
         eyebrow={data.income.periodLabel}
         title={`Hola, ${data.user.name}.`}
         right={
-          <div className="grid size-9 place-items-center rounded-full border border-white/[0.06] bg-[#161b25] text-[13px] font-medium text-[#a4adbe]">
+          <button
+            type="button"
+            onClick={async () => {
+              await signOut();
+              window.location.href = "/sign-in";
+            }}
+            className="grid size-9 place-items-center rounded-full border border-white/[0.06] bg-[#161b25] text-[13px] font-medium text-[#a4adbe]"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
             {data.user.initials}
-          </div>
+          </button>
         }
       />
       <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll">

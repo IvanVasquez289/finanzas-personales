@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
 import { ReceiptText } from "lucide-react";
 import { Dot } from "@/components/finance/dot";
 import { SectionHeader } from "@/components/finance/section-header";
@@ -21,16 +22,32 @@ export function ExpenseFormScreen({
   onSaved: () => void;
 }) {
   const router = useRouter();
-  const [amount, setAmount] = useState("128.40");
-  const [merchant, setMerchant] = useState("Uber");
-  const [note, setNote] = useState("Didi al aeropuerto, viernes");
-  const [cat, setCat] = useState(data.expenseForm.categories[0]?.id ?? "");
-  const [method, setMethod] = useState(data.expenseForm.accounts[0]?.id ?? "");
+  const today = new Date();
+  const currentDate = today.toISOString().slice(0, 10);
+  const currentTime = today.toTimeString().slice(0, 5);
+  const form = useForm({
+    defaultValues: {
+      amount: "128.40",
+      merchant: "Uber",
+      note: "Didi al aeropuerto, viernes",
+      categoryId: data.expenseForm.categories[0]?.id ?? "",
+      accountId: data.expenseForm.accounts[0]?.id ?? "",
+      date: currentDate,
+      time: currentTime,
+      isInstallment: false,
+      installments: 3,
+    },
+  });
   const [state, formAction, pending] = useActionState(createExpenseAction, {
     ok: false,
     message: "",
   });
 
+  const amount = form.watch("amount");
+  const merchant = form.watch("merchant");
+  const cat = form.watch("categoryId");
+  const method = form.watch("accountId");
+  const isInstallment = form.watch("isInstallment");
   const cats = data.expenseForm.categories;
   const methods = data.expenseForm.accounts;
   const selectedMethod = methods.find((item) => item.id === method);
@@ -38,15 +55,20 @@ export function ExpenseFormScreen({
   useEffect(() => {
     if (!state.ok) return;
 
-    router.refresh();
-    onSaved();
+    const timer = window.setTimeout(() => {
+      router.refresh();
+      onSaved();
+    }, 850);
+
+    return () => window.clearTimeout(timer);
   }, [onSaved, router, state.ok]);
 
   return (
     <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
-      <input type="hidden" name="amount" value={amount} />
-      <input type="hidden" name="categoryId" value={cat} />
-      <input type="hidden" name="accountId" value={method} />
+      <input type="hidden" {...form.register("amount")} />
+      <input type="hidden" {...form.register("categoryId")} />
+      <input type="hidden" {...form.register("accountId")} />
+      <input type="hidden" name="isInstallment" value={isInstallment ? "true" : "false"} />
       <div className="flex items-center justify-between px-4 pb-3">
         <button type="button" className="text-[14px] text-[#a4adbe]" onClick={onCancel}>Cancelar</button>
         <div className="text-[15px] font-semibold">Nuevo gasto</div>
@@ -68,9 +90,7 @@ export function ExpenseFormScreen({
         <div className="mt-2">
           <SectionHeader title="Comercio" />
           <input
-            name="merchant"
-            value={merchant}
-            onChange={(event) => setMerchant(event.target.value)}
+            {...form.register("merchant", { required: true })}
             className="h-12 w-full rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[15px] text-[#eef2f8] outline-none placeholder:text-[#6a7384] focus:border-[#2A5BFF]/60"
             placeholder="Uber, Bama, Amazon..."
           />
@@ -82,7 +102,7 @@ export function ExpenseFormScreen({
               <button
                 type="button"
                 key={c.id}
-                onClick={() => setCat(c.id)}
+                onClick={() => form.setValue("categoryId", c.id)}
                 className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium"
                 style={{ background: cat === c.id ? `${c.color}22` : FT.surface, borderColor: cat === c.id ? `${c.color}55` : FT.hairline, color: cat === c.id ? c.color : FT.textDim }}
               >
@@ -96,7 +116,7 @@ export function ExpenseFormScreen({
           <SectionHeader title="Cargar a" />
           <Card className="overflow-hidden">
             {methods.map((m, index) => (
-              <button type="button" key={m.id} onClick={() => setMethod(m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === methods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
+              <button type="button" key={m.id} onClick={() => form.setValue("accountId", m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === methods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <span className="grid size-[22px] shrink-0 place-items-center rounded-full border" style={{ borderColor: method === m.id ? FT.accent : "rgba(255,255,255,0.10)" }}>
                   {method === m.id ? <span className="size-2.5 rounded-full bg-[#2A5BFF]" /> : null}
                 </span>
@@ -115,17 +135,54 @@ export function ExpenseFormScreen({
               <div className="text-[14px] font-medium">¿Meses sin intereses?</div>
               <div className="mt-0.5 text-[11px] text-[#6a7384]">Divide el monto en parcialidades del ciclo</div>
             </div>
-            <div className="flex h-6 w-[42px] items-center rounded-full bg-[#1d2330] p-0.5">
-              <div className="size-5 rounded-full bg-[#6a7384]" />
+            <button
+              type="button"
+              onClick={() => form.setValue("isInstallment", !isInstallment)}
+              className={`flex h-6 w-[42px] items-center rounded-full p-0.5 ${isInstallment ? "justify-end bg-[#2A5BFF]" : "justify-start bg-[#1d2330]"}`}
+            >
+              <span className="size-5 rounded-full bg-white" />
+            </button>
+          </div>
+          {isInstallment ? (
+            <div className="mt-3 grid grid-cols-[1fr_84px] items-center gap-3">
+              <label className="text-[12px] text-[#a4adbe]" htmlFor="installments">
+                Parcialidades
+              </label>
+              <input
+                id="installments"
+                type="number"
+                min={2}
+                max={24}
+                {...form.register("installments", { valueAsNumber: true })}
+                className="h-9 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[14px] outline-none focus:border-[#2A5BFF]/60"
+              />
             </div>
+          ) : null}
+        </Card>
+        <Card className="mt-3.5 p-3.5">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-[12px] text-[#6a7384]">
+              Fecha
+              <input
+                type="date"
+                {...form.register("date", { required: true })}
+                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              />
+            </label>
+            <label className="text-[12px] text-[#6a7384]">
+              Hora
+              <input
+                type="time"
+                {...form.register("time", { required: true })}
+                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              />
+            </label>
           </div>
         </Card>
         <Card className="mt-3.5 p-3.5">
           <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Nota</div>
           <input
-            name="note"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
+            {...form.register("note")}
             className="mt-1.5 w-full bg-transparent text-[14px] text-[#a4adbe] outline-none placeholder:text-[#6a7384]"
             placeholder="Detalle opcional"
           />
@@ -141,7 +198,7 @@ export function ExpenseFormScreen({
           </div>
         ) : null}
       </div>
-      <Keypad value={amount} setValue={setAmount} />
+      <Keypad value={amount} setValue={(value) => form.setValue("amount", value)} />
     </form>
   );
 }

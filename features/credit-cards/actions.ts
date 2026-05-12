@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getCurrentFinanceUser } from "@/lib/current-user";
 import { prisma } from "@/lib/db";
 
 export type RegisterCardPaymentState = {
@@ -30,9 +31,9 @@ export async function registerCardPaymentAction(
     };
   }
 
-  const user = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+  const user = await getCurrentFinanceUser();
   if (!user) {
-    return { ok: false, message: "No hay usuario configurado." };
+    return { ok: false, message: "Inicia sesión para registrar pagos." };
   }
 
   const amountCents = Math.round(parsed.data.amount * 100);
@@ -50,7 +51,16 @@ export async function registerCardPaymentAction(
 
   await prisma.$transaction(async (tx) => {
     const today = new Date();
-    const fingerprint = `${today.toISOString().slice(0, 10)}|PAGO ${cycle.creditAccount.account.name.toUpperCase()}|${amountCents}|${cycle.id}`;
+    const fingerprint = `${today.toISOString().slice(0, 10)}|PAGO ${cycle.creditAccount.account.name.toUpperCase()}|${cycle.id}`;
+    const cycleExpenseCents = await tx.transaction.aggregate({
+      where: {
+        creditCardCycleId: cycle.id,
+        direction: "expense",
+        status: "confirmed",
+      },
+      _sum: { amountCents: true },
+    });
+    const statementAmountCents = cycle.statementAmountCents ?? cycleExpenseCents._sum.amountCents ?? 0;
     const existingPayment = await tx.transaction.findUnique({
       where: { userId_fingerprint: { userId: user.id, fingerprint } },
     });
@@ -61,7 +71,8 @@ export async function registerCardPaymentAction(
       where: { id: cycle.id },
       data: {
         paidAmountCents: { increment: deltaCents },
-        statementAmountCents: cycle.statementAmountCents ?? amountCents,
+        statementAmountCents,
+        status: (cycle.paidAmountCents ?? 0) + deltaCents >= statementAmountCents ? "paid" : cycle.status,
       },
     });
 
@@ -103,4 +114,54 @@ export async function registerCardPaymentAction(
   revalidatePath("/");
 
   return { ok: true, message: "Pago registrado." };
+}
+
+export async function closeCreditCycleAction(
+  _previousState: RegisterCardPaymentState,
+  formData: FormData,
+): Promise<RegisterCardPaymentState> {
+  const parsed = z.object({ cycleId: z.string().min(1) }).safeParse({
+    cycleId: formData.get("cycleId"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: "Selecciona un ciclo." };
+  }
+
+  const user = await getCurrentFinanceUser();
+  if (!user) {
+    return { ok: false, message: "Inicia sesión para cerrar ciclos." };
+  }
+
+  const cycle = await prisma.creditCardCycle.findFirst({
+    where: {
+      id: parsed.data.cycleId,
+      creditAccount: { account: { userId: user.id } },
+    },
+  });
+
+  if (!cycle) {
+    return { ok: false, message: "El ciclo seleccionado no existe." };
+  }
+
+  const total = await prisma.transaction.aggregate({
+    where: {
+      creditCardCycleId: cycle.id,
+      direction: "expense",
+      status: "confirmed",
+    },
+    _sum: { amountCents: true },
+  });
+
+  await prisma.creditCardCycle.update({
+    where: { id: cycle.id },
+    data: {
+      statementAmountCents: total._sum.amountCents ?? 0,
+      status: (cycle.paidAmountCents ?? 0) >= (total._sum.amountCents ?? 0) ? "paid" : "closed",
+    },
+  });
+
+  revalidatePath("/");
+
+  return { ok: true, message: "Ciclo cerrado." };
 }

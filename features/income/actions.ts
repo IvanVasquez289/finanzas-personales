@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getCurrentFinanceUser } from "@/lib/current-user";
 import { prisma } from "@/lib/db";
 
 export type ConfirmDistributionState = {
@@ -15,6 +16,7 @@ const confirmDistributionSchema = z.object({
   ahorro: z.coerce.number().min(0, "Ahorro no puede ser negativo."),
   fijos: z.coerce.number().min(0, "Fijos no puede ser negativo."),
   libre: z.coerce.number().min(0, "Libre no puede ser negativo."),
+  receivedAt: z.string().min(1, "Selecciona la fecha de recepción."),
 });
 
 const allocationTargets = [
@@ -34,6 +36,7 @@ export async function confirmDistributionAction(
     ahorro: formData.get("ahorro"),
     fijos: formData.get("fijos"),
     libre: formData.get("libre"),
+    receivedAt: formData.get("receivedAt"),
   });
 
   if (!parsed.success) {
@@ -50,13 +53,13 @@ export async function confirmDistributionAction(
     return { ok: false, message: "La distribución debe cuadrar con el ingreso." };
   }
 
-  const user = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+  const user = await getCurrentFinanceUser();
   if (!user) {
-    return { ok: false, message: "No hay usuario configurado." };
+    return { ok: false, message: "Inicia sesión para confirmar la distribución." };
   }
 
-  const today = new Date();
-  const dayKey = today.toISOString().slice(0, 10);
+  const today = new Date(`${values.receivedAt}T12:00:00`);
+  const dayKey = values.receivedAt;
   const incomeId = `${user.id}:income:${dayKey}`;
   const amountCents = toCents(values.amount);
 

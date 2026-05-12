@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
-import { registerCardPaymentAction } from "./actions";
+import { closeCreditCycleAction, registerCardPaymentAction } from "./actions";
 
 export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
   const router = useRouter();
@@ -22,7 +22,12 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
     ok: false,
     message: "",
   });
+  const [closeState, closeAction, closePending] = useActionState(closeCreditCycleAction, {
+    ok: false,
+    message: "",
+  });
   const card = data.creditCards[selectedCard] ?? data.creditCards[0] ?? {
+    accountId: "",
     issuer: "Sin tarjeta",
     dot: FT.accent,
     daysToClose: 0,
@@ -37,13 +42,20 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
   };
   const pct = card.budget > 0 ? card.used / card.budget : 0;
   const categories = card.categorySpend;
-  const installmentRows = data.payments.filter((payment) => payment.chip === "MSI" || payment.chip === "Fijos");
+  const installmentRows = data.payments.filter(
+    (payment) => (payment.chip === "MSI" || payment.chip === "Fijos") && (!payment.accountId || payment.accountId === card.accountId),
+  );
+  const [paymentAmount, setPaymentAmount] = useState(card.due);
 
   useEffect(() => {
     if (!paymentState.ok) return;
 
     router.refresh();
   }, [paymentState.ok, router]);
+
+  useEffect(() => {
+    setPaymentAmount(card.due);
+  }, [card.due, selectedCard]);
 
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
@@ -138,13 +150,38 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
         {card.cycleId ? (
           <form action={paymentAction} className="mt-4">
             <input type="hidden" name="cycleId" value={card.cycleId} />
-            <input type="hidden" name="amount" value={card.due} />
+            <label className="mb-2 block text-[12px] text-[#6a7384]">
+              Pago a registrar
+              <input
+                name="amount"
+                type="number"
+                min={0}
+                max={Math.max(card.due, paymentAmount)}
+                step="0.01"
+                value={paymentAmount}
+                onChange={(event) => setPaymentAmount(Number(event.target.value))}
+                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              />
+            </label>
             <Button className="w-full" disabled={paymentPending || card.due <= 0}>
-              {card.due > 0 ? `Registrar pago de ${money(card.due)}` : "Ciclo pagado"}
+              {card.due > 0 ? `Registrar pago de ${money(paymentAmount)}` : "Ciclo pagado"}
             </Button>
             {paymentState.message ? (
               <div className="mt-2 text-center text-[12px]" style={{ color: paymentState.ok ? FT.pos : FT.danger }}>
                 {paymentState.message}
+              </div>
+            ) : null}
+          </form>
+        ) : null}
+        {card.cycleId ? (
+          <form action={closeAction} className="mt-2">
+            <input type="hidden" name="cycleId" value={card.cycleId} />
+            <Button type="submit" variant="secondary" className="w-full" disabled={closePending}>
+              {closePending ? "Cerrando ciclo" : "Cerrar ciclo"}
+            </Button>
+            {closeState.message ? (
+              <div className="mt-2 text-center text-[12px]" style={{ color: closeState.ok ? FT.pos : FT.danger }}>
+                {closeState.message}
               </div>
             ) : null}
           </form>

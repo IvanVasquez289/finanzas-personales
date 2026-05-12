@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
 import { ArrowLeft, CalendarDays, CreditCard, PiggyBank, WalletCards } from "lucide-react";
 import { AllocationSlider } from "@/components/income/allocation-slider";
 import { BigNum } from "@/components/finance/big-num";
@@ -24,7 +25,14 @@ export function DistributionScreen({
   onSaved: () => void;
 }) {
   const router = useRouter();
-  const ingreso = data.income.amount || 1;
+  const today = new Date().toISOString().slice(0, 10);
+  const form = useForm({
+    defaultValues: {
+      amount: data.income.amount || 0,
+      receivedAt: data.income.receivedAt ? data.income.receivedAt.slice(0, 10) : today,
+    },
+  });
+  const ingreso = form.watch("amount") || 0;
   const [vals, setVals] = useState({
     pago: data.allocation.pagoTarjetas,
     ahorro: data.allocation.ahorro,
@@ -53,7 +61,6 @@ export function DistributionScreen({
 
   return (
     <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
-      <input type="hidden" name="amount" value={ingreso} />
       <input type="hidden" name="pago" value={vals.pago} />
       <input type="hidden" name="ahorro" value={vals.ahorro} />
       <input type="hidden" name="fijos" value={vals.fijos} />
@@ -68,6 +75,26 @@ export function DistributionScreen({
         <div className="mt-1.5 flex items-baseline gap-2.5">
           <BigNum value={ingreso} size={36} />
           <Tag color={FT.pos} bg={FT.posSoft}>+ ingreso</Tag>
+        </div>
+        <div className="mt-3 grid grid-cols-[1fr_150px] gap-3">
+          <label className="text-[12px] text-[#6a7384]">
+            Monto recibido
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              {...form.register("amount", { valueAsNumber: true })}
+              className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+            />
+          </label>
+          <label className="text-[12px] text-[#6a7384]">
+            Fecha
+            <input
+              type="date"
+              {...form.register("receivedAt")}
+              className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+            />
+          </label>
         </div>
         <div className="mt-1.5 text-[13px] text-[#a4adbe]">¿Cómo lo repartimos hoy?</div>
       </div>

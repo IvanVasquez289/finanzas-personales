@@ -21,7 +21,7 @@ export function AllocationSlider({
   ingreso: number;
   onChange: (value: number) => void;
 }) {
-  const pct = (value / ingreso) * 100;
+  const pct = ingreso > 0 ? (value / ingreso) * 100 : 0;
   const isSuggested = Math.abs(value - sugerido) < 50;
 
   return (
@@ -45,7 +45,7 @@ export function AllocationSlider({
         aria-label={`Asignación para ${name}`}
         type="range"
         min={0}
-        max={ingreso}
+        max={Math.max(ingreso, value, 0)}
         step={50}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}

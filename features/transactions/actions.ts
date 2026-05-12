@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { CreditAccount, Prisma } from "@prisma/client";
 import { z } from "zod";
+import { getCurrentFinanceUser } from "@/lib/current-user";
 import { cycleIdFor, getCreditCycleDates } from "@/lib/credit-cycles";
 import { prisma } from "@/lib/db";
 
@@ -20,6 +21,10 @@ const createExpenseSchema = z.object({
   categoryId: z.string().min(1, "Selecciona una categoría."),
   merchant: z.string().trim().min(1, "Escribe el comercio."),
   note: z.string().trim().max(180, "La nota es demasiado larga.").optional(),
+  date: z.string().min(1, "Selecciona la fecha."),
+  time: z.string().regex(/^\d{2}:\d{2}$/, "Selecciona una hora válida."),
+  isInstallment: z.boolean(),
+  installments: z.coerce.number().int().min(2).max(24).optional(),
 });
 
 export async function createExpenseAction(
@@ -32,6 +37,10 @@ export async function createExpenseAction(
     categoryId: formData.get("categoryId"),
     merchant: formData.get("merchant"),
     note: formData.get("note"),
+    date: formData.get("date"),
+    time: formData.get("time"),
+    isInstallment: formData.get("isInstallment") === "true",
+    installments: formData.get("installments") || undefined,
   });
 
   if (!parsed.success) {
@@ -46,9 +55,9 @@ export async function createExpenseAction(
     return { ok: false, message: "El monto debe ser mayor a cero." };
   }
 
-  const user = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+  const user = await getCurrentFinanceUser();
   if (!user) {
-    return { ok: false, message: "No hay usuario configurado." };
+    return { ok: false, message: "Inicia sesión para guardar gastos." };
   }
 
   const [account, category] = await Promise.all([
@@ -78,11 +87,15 @@ export async function createExpenseAction(
     return { ok: false, message: "La categoría seleccionada no existe." };
   }
 
-  const now = new Date();
+  const now = parseLocalDateTime(parsed.data.date, parsed.data.time);
   const isCreditAccount = account.type === "credit_card" || account.type === "store_card";
 
   if (isCreditAccount && !account.creditAccount) {
     return { ok: false, message: "La tarjeta seleccionada no tiene ciclo abierto." };
+  }
+
+  if (parsed.data.isInstallment && !isCreditAccount) {
+    return { ok: false, message: "Los MSI solo se pueden registrar en una tarjeta." };
   }
 
   const merchantNormalized = normalizeMerchant(parsed.data.merchant);
@@ -92,6 +105,17 @@ export async function createExpenseAction(
     date: now,
     merchantNormalized,
   });
+  const duplicate = await findTolerantDuplicate({
+    userId: user.id,
+    accountId: account.id,
+    amountCents,
+    date: now,
+    merchantNormalized,
+  });
+
+  if (duplicate) {
+    return { ok: false, message: "Ya existe un gasto muy parecido en esas fechas." };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -123,6 +147,25 @@ export async function createExpenseAction(
         },
       });
 
+      if (parsed.data.isInstallment && account.creditAccount) {
+        const installments = parsed.data.installments ?? 3;
+        const monthlyAmountCents = Math.round(amountCents / installments);
+
+        await tx.installmentPlan.create({
+          data: {
+            userId: user.id,
+            accountId: account.id,
+            merchant: parsed.data.merchant,
+            originalAmountCents: amountCents,
+            monthlyAmountCents,
+            totalInstallments: installments,
+            currentInstallment: 1,
+            startDate: now,
+            status: "active",
+          },
+        });
+      }
+
       if (!isCreditAccount) {
         await tx.account.update({
           where: { id: account.id },
@@ -141,6 +184,41 @@ export async function createExpenseAction(
   revalidatePath("/");
 
   return { ok: true, message: "Gasto guardado." };
+}
+
+async function findTolerantDuplicate({
+  userId,
+  accountId,
+  amountCents,
+  date,
+  merchantNormalized,
+}: {
+  userId: string;
+  accountId: string;
+  amountCents: number;
+  date: Date;
+  merchantNormalized: string;
+}) {
+  const start = new Date(date);
+  start.setDate(start.getDate() - 2);
+  const end = new Date(date);
+  end.setDate(end.getDate() + 2);
+
+  return prisma.transaction.findFirst({
+    where: {
+      userId,
+      accountId,
+      amountCents,
+      merchantNormalized,
+      direction: "expense",
+      status: "confirmed",
+      date: {
+        gte: start,
+        lte: end,
+      },
+    },
+    select: { id: true },
+  });
 }
 
 async function getOrCreateCreditCycle(
@@ -189,6 +267,10 @@ function createTransactionFingerprint({
 }) {
   const day = date.toISOString().slice(0, 10);
   return `${day}|${merchantNormalized}|${amountCents}|${accountId}`;
+}
+
+function parseLocalDateTime(date: string, time: string) {
+  return new Date(`${date}T${time}:00`);
 }
 
 function isUniqueConstraintError(error: unknown) {

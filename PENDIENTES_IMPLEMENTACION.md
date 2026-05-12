@@ -6,26 +6,26 @@ Documento ordenado por importancia para convertir la maqueta en una app financie
 
 Estas tareas afectan directamente si la app sirve para registrar el día y entender cuánto dinero queda.
 
-1. [ ] Registro de pagos de tarjeta y cierre de ciclo.
+1. [x] Registro de pagos de tarjeta y cierre de ciclo.
    - [x] Primera versión de registro de pago implementada.
-   - [ ] Cierre formal de ciclo.
-   - [ ] Histórico de ciclos.
-   - [ ] Pagos parciales editables.
-2. [ ] Registro de gasto completo.
+   - [x] Cierre formal de ciclo.
+   - [x] Histórico de ciclos.
+   - [x] Pagos parciales editables.
+2. [x] Registro de gasto completo.
    - [x] Pantalla maquetada.
    - [x] Primera server action implementada.
-   - [ ] Fecha/hora editable.
-   - [ ] React Hook Form.
-   - [ ] MSI como `InstallmentPlan`.
-   - [ ] Mejor confirmación visual.
-   - [ ] Duplicados tolerantes por fecha/monto/comercio.
+   - [x] Fecha/hora editable.
+   - [x] React Hook Form.
+   - [x] MSI como `InstallmentPlan`.
+   - [x] Mejor confirmación visual.
+   - [x] Duplicados tolerantes por fecha/monto/comercio.
 3. [ ] Distribución de quincena completa.
    - [x] Pantalla maquetada.
    - [x] Primera server action implementada.
-   - [ ] Capturar nuevo ingreso desde la pantalla.
-   - [ ] Fecha de recepción.
+   - [x] Capturar nuevo ingreso desde la pantalla.
+   - [x] Fecha de recepción.
    - [ ] Plantillas editables.
-   - [ ] React Hook Form.
+   - [x] React Hook Form.
 4. [ ] Saldos confiables de sobres/cuentas.
    - [x] Pantalla maquetada.
    - [ ] Derivar saldos completamente desde allocations.
@@ -68,6 +68,8 @@ Estas tareas hacen que la información deje de estar resumida solamente en cards
 Estas tareas son importantes antes de usar la app como sistema estable.
 
 1. [ ] Autenticación simple.
+   - [x] Integración con Better Auth en código.
+   - [ ] Migración de Auth pendiente de aplicar en Supabase.
 2. [ ] Configuración inicial/onboarding.
 3. [ ] Usuario dedicado para Prisma en Supabase en vez de `postgres`.
 4. [x] Revisar permisos de Data API con RLS y revokes.
@@ -101,11 +103,11 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 
 ### Tarjetas
 
-- [ ] Registrar pagos parciales editables.
-- [ ] Cerrar ciclos y conservar histórico.
+- [x] Registrar pagos parciales editables.
+- [x] Cerrar ciclos y conservar histórico.
 - [ ] Mostrar detalle completo de movimientos por tarjeta.
 - [x] Filtrar gasto por categoría por tarjeta/ciclo seleccionado.
-- [ ] Filtrar MSI por tarjeta seleccionada.
+- [x] Filtrar MSI por tarjeta seleccionada.
 - [x] Calcular timeline de ciclo con fechas reales.
 - [ ] Editar presupuesto personal de tarjeta.
 

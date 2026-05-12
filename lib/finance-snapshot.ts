@@ -40,6 +40,7 @@ export type FinanceSnapshot = {
     sub: string;
   }[];
   creditCards: {
+    accountId: string;
     cycleId?: string;
     issuer: string;
     dot: string;
@@ -58,6 +59,7 @@ export type FinanceSnapshot = {
     }[];
   }[];
   payments: {
+    accountId?: string;
     label: string;
     sub: string;
     date: string;
@@ -150,9 +152,9 @@ function daysUntil(date: Date) {
   return Math.max(0, Math.ceil(ms / 86_400_000));
 }
 
-export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
-  const user = await prisma.user.findFirst({
-    orderBy: { createdAt: "asc" },
+export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapshot> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
   });
 
   if (!user) {
@@ -182,7 +184,7 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
       include: {
         account: true,
         cycles: {
-          where: { status: "open" },
+          where: { status: { in: ["open", "closed", "paid"] } },
           orderBy: { startDate: "desc" },
           include: {
             transactions: {
@@ -258,6 +260,7 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
 
     return {
       issuer: credit.account.name,
+      accountId: credit.accountId,
       cycleId: cycle?.id,
       dot: cardColor(credit.account.name),
       daysToClose: cycle ? daysUntil(cycle.endDate) : 0,
@@ -274,9 +277,10 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
 
   const payments = [
     ...installmentPlans.slice(0, 3).map((plan) => ({
+      accountId: plan.accountId,
       label: plan.merchant,
       sub: `Mensualidad ${plan.currentInstallment} de ${plan.totalInstallments}`,
-      date: "21 may",
+      date: formatShortDate(plan.startDate),
       amount: toAmount(plan.monthlyAmountCents),
       chip: plan.account.type === "envelope" ? "Fijos" : "MSI",
       chipColor: plan.account.type === "store_card" ? "#E94B6A" : undefined,
