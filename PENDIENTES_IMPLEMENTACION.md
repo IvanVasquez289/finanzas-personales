@@ -19,38 +19,38 @@ Estas tareas afectan directamente si la app sirve para registrar el día y enten
    - [x] MSI como `InstallmentPlan`.
    - [x] Mejor confirmación visual.
    - [x] Duplicados tolerantes por fecha/monto/comercio.
-3. [ ] Distribución de quincena completa.
+3. [x] Distribución de quincena completa.
    - [x] Pantalla maquetada.
    - [x] Primera server action implementada.
    - [x] Capturar nuevo ingreso desde la pantalla.
    - [x] Fecha de recepción.
-   - [ ] Plantillas editables.
+   - [x] Plantillas editables.
    - [x] React Hook Form.
-4. [ ] Saldos confiables de sobres/cuentas.
+4. [x] Saldos confiables de sobres/cuentas.
    - [x] Pantalla maquetada.
-   - [ ] Derivar saldos completamente desde allocations.
-   - [ ] Derivar saldos completamente desde gastos y pagos.
-   - [ ] Ajustes auditables de saldo.
-5. [ ] Dashboard con cálculos de dominio.
+   - [x] Derivar saldos completamente desde allocations.
+   - [x] Derivar saldos completamente desde gastos y pagos.
+   - [x] Ajustes auditables de saldo.
+5. [x] Dashboard con cálculos de dominio.
    - [x] Pantalla maquetada.
    - [x] Alimentación desde Prisma.
-   - [ ] Dinero libre calculado con servicios puros.
-   - [ ] Dinero comprometido calculado con servicios puros.
-   - [ ] Próximos pagos calculados con reglas completas.
-   - [ ] Alertas reales.
-   - [ ] Filtros por periodo real.
+   - [x] Dinero libre calculado con servicios puros.
+   - [x] Dinero comprometido calculado con servicios puros.
+   - [x] Próximos pagos calculados con reglas completas.
+   - [x] Alertas reales.
+   - [x] Filtros por periodo real.
 
 ## Prioridad 2 - Configuración del MVP
 
 Estas tareas permiten dejar de depender del seed y adaptar la app a cambios reales.
 
-1. [ ] CRUD de cuentas/sobres.
-2. [ ] CRUD de tarjetas.
-3. [ ] Configuración de corte y fecha límite de pago.
-4. [ ] Edición de presupuesto personal de tarjeta.
-5. [ ] CRUD de categorías.
-6. [ ] CRUD de metas de ahorro.
-7. [ ] Alta/edición de presupuestos por categoría o cuenta.
+1. [x] CRUD de cuentas/sobres.
+2. [x] CRUD de tarjetas.
+3. [x] Configuración de corte y fecha límite de pago.
+4. [x] Edición de presupuesto personal de tarjeta.
+5. [x] CRUD de categorías.
+6. [x] CRUD de metas de ahorro.
+7. [x] Alta/edición de presupuestos por categoría o cuenta.
 
 ## Prioridad 3 - Navegación y detalle
 
@@ -94,12 +94,12 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 
 ### Dashboard
 
-- [ ] Extraer cálculos a servicios de dominio testeables.
-- [ ] Calcular dinero libre desde transacciones, allocations y compromisos reales.
-- [ ] Calcular dinero comprometido con reglas completas.
-- [ ] Agregar alertas reales por presupuesto y exceso de gasto.
+- [x] Extraer cálculos a servicios de dominio testeables.
+- [x] Calcular dinero libre desde transacciones, allocations y compromisos reales.
+- [x] Calcular dinero comprometido con reglas completas.
+- [x] Agregar alertas reales por presupuesto y exceso de gasto.
 - [ ] Conectar acciones de “Ver todas”, calendario y detalle de movimientos.
-- [ ] Agregar filtros por periodo real.
+- [x] Agregar filtros por periodo real.
 
 ### Tarjetas
 
@@ -109,33 +109,33 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 - [x] Filtrar gasto por categoría por tarjeta/ciclo seleccionado.
 - [x] Filtrar MSI por tarjeta seleccionada.
 - [x] Calcular timeline de ciclo con fechas reales.
-- [ ] Editar presupuesto personal de tarjeta.
+- [x] Editar presupuesto personal de tarjeta.
 
 ### Sobres y cuentas
 
-- [ ] Crear, editar y desactivar sobres/cuentas.
+- [x] Crear, editar y desactivar sobres/cuentas.
 - [ ] Reordenar sobres.
-- [ ] Ajustes manuales de saldo con auditoría.
-- [ ] Derivar saldos completamente desde movimientos y allocations.
+- [x] Ajustes manuales de saldo con auditoría.
+- [x] Derivar saldos completamente desde movimientos y allocations.
 - [ ] Separar cuentas bancarias reales de sobres contables cuando sea necesario.
 
 ### Distribución de quincena
 
-- [ ] Convertir UI a React Hook Form.
-- [ ] Crear plantillas de distribución editables.
-- [ ] Permitir capturar un nuevo monto de ingreso desde la pantalla.
-- [ ] Permitir elegir fecha de recepción.
-- [ ] Evitar distribuir contra un ingreso viejo cuando no exista ingreso del periodo actual.
+- [x] Convertir UI a React Hook Form.
+- [x] Crear plantillas de distribución editables.
+- [x] Permitir capturar un nuevo monto de ingreso desde la pantalla.
+- [x] Permitir elegir fecha de recepción.
+- [x] Evitar distribuir contra un ingreso viejo cuando no exista ingreso del periodo actual.
 
 ### Registro de gasto
 
-- [ ] Convertir UI a React Hook Form.
-- [ ] Permitir elegir fecha y hora del gasto.
+- [x] Convertir UI a React Hook Form.
+- [x] Permitir elegir fecha y hora del gasto.
 - [ ] Permitir editar método de pago y comercio con mejor UX.
-- [ ] Manejar MSI como `InstallmentPlan`.
+- [x] Manejar MSI como `InstallmentPlan`.
 - [ ] Crear reglas de comercio a categoría.
-- [ ] Mejorar detección de duplicados con tolerancias por fecha/monto/comercio.
-- [ ] Mostrar confirmación visual persistente después de guardar.
+- [x] Mejorar detección de duplicados con tolerancias por fecha/monto/comercio.
+- [x] Mostrar confirmación visual persistente después de guardar.
 
 ### PWA
 
@@ -146,7 +146,7 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 
 ## Pantallas no maquetadas todavía
 
-- [ ] Autenticación simple.
+- [x] Autenticación simple.
 - [ ] Configuración inicial/onboarding.
 - [ ] Alta/edición de cuentas.
 - [ ] Alta/edición de tarjetas.

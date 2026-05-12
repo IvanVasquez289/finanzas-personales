@@ -1,4 +1,4 @@
-import { CreditCard, Home, Plus, Target, WalletCards } from "lucide-react";
+import { CreditCard, Home, Plus, Settings, Target, WalletCards } from "lucide-react";
 import type { AppScreen } from "@/features/navigation/types";
 import { FT } from "@/lib/finance-tokens";
 
@@ -15,6 +15,7 @@ export function BottomTabBar({
     { id: "add" as const, label: "", icon: Plus, isAdd: true },
     { id: "env" as const, label: "Sobres", icon: WalletCards },
     { id: "goal" as const, label: "Meta", icon: Target },
+    { id: "settings" as const, label: "Config", icon: Settings },
   ];
 
   return (

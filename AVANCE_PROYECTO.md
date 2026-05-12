@@ -59,21 +59,19 @@ Estado importante:
 - [x] Registrar MSI como `InstallmentPlan`.
 - [x] Permitir pagos parciales y cierre formal de ciclos.
 - [x] Capturar ingreso y fecha de recepción desde distribución.
+- [x] Agregar plantillas editables para distribución de quincena.
+- [x] Derivar saldos desde allocations, transacciones, pagos y ajustes auditables.
+- [x] Extraer cálculos de dashboard a servicios puros.
+- [x] Agregar alertas por presupuesto y filtros por periodo.
+- [x] Implementar configuración MVP para cuentas, tarjetas, categorías, metas y presupuestos.
 
 #### Parcial
 
-- [ ] Migración de Better Auth pendiente de aplicar en Supabase.
 - [ ] Dashboard con cálculos de dominio: faltan pruebas unitarias para blindar reglas.
-- [ ] Saldos de sobres/cuentas: falta separar ajustes manuales auditables como flujo propio.
 
 #### Pendiente
 
 - [ ] Configuración inicial/onboarding.
-- [ ] CRUD de cuentas/sobres.
-- [ ] CRUD de tarjetas.
-- [ ] CRUD de categorías.
-- [ ] CRUD de metas de ahorro.
-- [ ] Alta/edición de presupuestos.
 - [ ] Detalle completo de movimientos.
 - [ ] Reportes mensuales y por ciclo.
 - [ ] Calendario de pagos.

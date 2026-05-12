@@ -97,6 +97,25 @@ export function DistributionScreen({
           </label>
         </div>
         <div className="mt-1.5 text-[13px] text-[#a4adbe]">¿Cómo lo repartimos hoy?</div>
+        {data.income.templates.length > 0 ? (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {data.income.templates.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => setVals({
+                  pago: template.pago,
+                  ahorro: template.ahorro,
+                  fijos: template.fijos,
+                  libre: template.libre,
+                })}
+                className="shrink-0 rounded-full border border-white/[0.08] bg-[#10141d] px-3 py-2 text-[12px] font-medium text-[#a4adbe]"
+              >
+                {template.name}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="px-4 py-3">
         <Card className="p-3.5">

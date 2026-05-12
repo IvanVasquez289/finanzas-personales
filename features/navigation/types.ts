@@ -1,1 +1,1 @@
-export type AppScreen = "home" | "cards" | "add" | "env" | "goal";
+export type AppScreen = "home" | "cards" | "add" | "env" | "goal" | "settings";

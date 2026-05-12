@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getCreditCycleDates } from "@/lib/credit-cycles";
+import { calculateDashboardMetrics, deriveAccountBalances } from "@/lib/finance-domain";
 
 export type FinanceSnapshot = {
   user: {
@@ -10,12 +11,29 @@ export type FinanceSnapshot = {
     amount: number;
     periodLabel: string;
     receivedAt: string;
+    templates: {
+      id: string;
+      name: string;
+      pago: number;
+      ahorro: number;
+      fijos: number;
+      libre: number;
+    }[];
   };
   allocation: {
     pagoTarjetas: number;
     ahorro: number;
     fijos: number;
     libre: number;
+  };
+  dashboard: {
+    libre: number;
+    committed: number;
+    alerts: {
+      label: string;
+      detail: string;
+      tone: "warn" | "danger";
+    }[];
   };
   goals: {
     ahorro: {
@@ -27,6 +45,7 @@ export type FinanceSnapshot = {
     };
   };
   envelopes: {
+    id: string;
     name: string;
     balance: number;
     color: string;
@@ -35,6 +54,7 @@ export type FinanceSnapshot = {
     locked?: boolean;
   }[];
   bankAccounts: {
+    id: string;
     name: string;
     balance: number;
     sub: string;
@@ -74,6 +94,7 @@ export type FinanceSnapshot = {
     account: string;
     amount: number;
     date: string;
+    dateIso: string;
     income?: boolean;
   }[];
   expenseForm: {
@@ -88,6 +109,50 @@ export type FinanceSnapshot = {
       sub: string;
       paymentMethod: "credit_card" | "debit" | "cash" | "transfer";
       cycleLabel?: string;
+    }[];
+  };
+  settings: {
+    accounts: {
+      id: string;
+      name: string;
+      type: string;
+      balance: number;
+      isActive: boolean;
+      credit?: {
+        issuer: string;
+        limit: number;
+        cutoffDay: number;
+        paymentDueDay: number;
+        personalBudget: number;
+      };
+    }[];
+    categories: {
+      id: string;
+      name: string;
+      color: string;
+      isSystem: boolean;
+    }[];
+    goals: {
+      id: string;
+      name: string;
+      currentAmount: number;
+      targetAmount: number;
+      status: string;
+    }[];
+    budgets: {
+      id: string;
+      label: string;
+      amount: number;
+      periodStart: string;
+      periodEnd: string;
+    }[];
+    templates: {
+      id: string;
+      name: string;
+      pago: number;
+      ahorro: number;
+      fijos: number;
+      libre: number;
     }[];
   };
 };
@@ -161,7 +226,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     return emptySnapshot();
   }
 
-  const [latestIncome, accounts, goals, creditAccounts, transactions, installmentPlans] = await Promise.all([
+  const [latestIncome, accounts, allAccounts, goals, creditAccounts, transactions, allTransactions, allocations, installmentPlans, budgets, categories, templates] = await Promise.all([
     prisma.incomeEvent.findFirst({
       where: { userId: user.id },
       orderBy: { receivedAt: "desc" },
@@ -174,6 +239,11 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     prisma.account.findMany({
       where: { userId: user.id, isActive: true },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.account.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+      include: { creditAccount: true },
     }),
     prisma.goal.findMany({
       where: { userId: user.id, status: "active" },
@@ -201,12 +271,37 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       take: 8,
       include: { account: true, category: true },
     }),
+    prisma.transaction.findMany({
+      where: { userId: user.id, status: "confirmed" },
+    }),
+    prisma.allocation.findMany({
+      where: { incomeEvent: { userId: user.id } },
+    }),
     prisma.installmentPlan.findMany({
       where: { userId: user.id, status: "active" },
       orderBy: { startDate: "asc" },
       include: { account: true },
     }),
+    prisma.budget.findMany({
+      where: { userId: user.id },
+      orderBy: { periodStart: "desc" },
+      include: { category: true, account: true },
+    }),
+    prisma.category.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.distributionTemplate.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
+  const balances = deriveAccountBalances({
+    accounts,
+    allocations,
+    transactions: allTransactions,
+  });
+  const balanceByAccountId = new Map(balances.map((balance) => [balance.accountId, balance.balanceCents]));
 
   const allocation = {
     pagoTarjetas: 0,
@@ -231,7 +326,8 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       const meta = envelopeMeta(account.name);
       return {
         name: account.name,
-        balance: toAmount(account.currentBalanceCents),
+        id: account.id,
+        balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
         color: meta.color,
         note: meta.note,
         locked: meta.locked,
@@ -295,6 +391,16 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       muted: card.due === 0,
     })),
   ];
+  const cardDueCents = creditCards.reduce((sum, card) => sum + Math.round(card.due * 100), 0);
+  const installmentCents = installmentPlans.reduce((sum, plan) => sum + plan.monthlyAmountCents, 0);
+  const dashboard = calculateDashboardMetrics({
+    balances,
+    accounts,
+    cardDueCents,
+    installmentCents,
+    budgets,
+    transactions: allTransactions,
+  });
 
   return {
     user: {
@@ -305,8 +411,21 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       amount: toAmount(latestIncome?.amountCents),
       periodLabel: latestIncome ? `Quincena · ${formatShortDate(latestIncome.receivedAt)}` : "Sin ingreso registrado",
       receivedAt: latestIncome?.receivedAt.toISOString() ?? "",
+      templates: templates.map((template) => ({
+        id: template.id,
+        name: template.name,
+        pago: toAmount(template.pagoTarjetasCents),
+        ahorro: toAmount(template.ahorroCents),
+        fijos: toAmount(template.fijosCents),
+        libre: toAmount(template.libreCents),
+      })),
     },
     allocation,
+    dashboard: {
+      libre: toAmount(dashboard.libreCents),
+      committed: toAmount(dashboard.committedCents),
+      alerts: dashboard.alerts,
+    },
     goals: {
       ahorro: {
         name: mainGoal?.name ?? "Meta de ahorro",
@@ -334,7 +453,8 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       .filter((account) => ["debit", "cash"].includes(account.type))
       .map((account) => ({
         name: account.name,
-        balance: toAmount(account.currentBalanceCents),
+        id: account.id,
+        balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
         sub: "Cuenta activa",
       })),
     creditCards,
@@ -345,6 +465,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       account: transaction.account.name,
       amount: transaction.direction === "expense" ? -toAmount(transaction.amountCents) : toAmount(transaction.amountCents),
       date: formatShortDate(transaction.date),
+      dateIso: transaction.date.toISOString(),
       income: transaction.direction === "income",
     })),
     expenseForm: {
@@ -361,11 +482,57 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
             label: account.name,
             sub: isCredit
               ? `${credit?.issuer ?? "Crédito"} · presupuesto ${toCurrency(toAmount(credit?.personalBudgetCents))}`
-              : `${account.type === "envelope" ? "Sobre" : "Cuenta"} · ${toCurrency(toAmount(account.currentBalanceCents))}`,
+              : `${account.type === "envelope" ? "Sobre" : "Cuenta"} · ${toCurrency(toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents))}`,
             paymentMethod: isCredit ? "credit_card" : account.type === "cash" ? "cash" : "debit",
             cycleLabel: cycle ? `Ciclo ${formatCycle(cycle.startDate, cycle.endDate)}` : undefined,
           };
         }),
+    },
+    settings: {
+      accounts: allAccounts.map((account) => ({
+        id: account.id,
+        name: account.name,
+        type: account.type,
+        balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
+        isActive: account.isActive,
+        credit: account.creditAccount
+          ? {
+              issuer: account.creditAccount.issuer,
+              limit: toAmount(account.creditAccount.creditLimitCents),
+              cutoffDay: account.creditAccount.cutoffDay,
+              paymentDueDay: account.creditAccount.paymentDueDay,
+              personalBudget: toAmount(account.creditAccount.personalBudgetCents),
+            }
+          : undefined,
+      })),
+      categories: categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        color: category.color ?? "#a4adbe",
+        isSystem: category.isSystem,
+      })),
+      goals: goals.map((goal) => ({
+        id: goal.id,
+        name: goal.name,
+        currentAmount: toAmount(goal.currentAmountCents),
+        targetAmount: toAmount(goal.targetAmountCents),
+        status: goal.status,
+      })),
+      budgets: budgets.map((budget) => ({
+        id: budget.id,
+        label: budget.category?.name ?? budget.account?.name ?? budget.scope,
+        amount: toAmount(budget.amountCents),
+        periodStart: budget.periodStart.toISOString().slice(0, 10),
+        periodEnd: budget.periodEnd.toISOString().slice(0, 10),
+      })),
+      templates: templates.map((template) => ({
+        id: template.id,
+        name: template.name,
+        pago: toAmount(template.pagoTarjetasCents),
+        ahorro: toAmount(template.ahorroCents),
+        fijos: toAmount(template.fijosCents),
+        libre: toAmount(template.libreCents),
+      })),
     },
   };
 }
@@ -390,8 +557,9 @@ function toCurrency(amount: number) {
 function emptySnapshot(): FinanceSnapshot {
   return {
     user: { name: "Iván", initials: "IV" },
-    income: { amount: 0, periodLabel: "Sin datos", receivedAt: "" },
+    income: { amount: 0, periodLabel: "Sin datos", receivedAt: "", templates: [] },
     allocation: { pagoTarjetas: 0, ahorro: 0, fijos: 0, libre: 0 },
+    dashboard: { libre: 0, committed: 0, alerts: [] },
     goals: {
       ahorro: {
         name: "Meta de ahorro",
@@ -409,6 +577,13 @@ function emptySnapshot(): FinanceSnapshot {
     expenseForm: {
       categories: [],
       accounts: [],
+    },
+    settings: {
+      accounts: [],
+      categories: [],
+      goals: [],
+      budgets: [],
+      templates: [],
     },
   };
 }

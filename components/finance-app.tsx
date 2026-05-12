@@ -7,6 +7,7 @@ import { CardDetailScreen } from "@/features/credit-cards/card-detail-screen";
 import { DashboardScreen } from "@/features/dashboard/dashboard-screen";
 import { DistributionScreen } from "@/features/income/distribution-screen";
 import type { AppScreen } from "@/features/navigation/types";
+import { SettingsScreen } from "@/features/settings/settings-screen";
 import { ExpenseFormScreen } from "@/features/transactions/expense-form-screen";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 
@@ -32,6 +33,7 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
           onSaved={() => setScreen("home")}
         />
       ) : null}
+      {screen === "settings" ? <SettingsScreen data={snapshot} /> : null}
     </AppShell>
   );
 }

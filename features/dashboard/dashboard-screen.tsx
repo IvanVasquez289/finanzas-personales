@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { MiniCard } from "@/components/cards/mini-card";
@@ -20,11 +21,12 @@ import { money } from "@/lib/money";
 import { signOut } from "@/lib/auth-client";
 
 export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
+  const [periodDays, setPeriodDays] = useState(30);
   const libreTotal = data.allocation.libre;
-  const libreBalance = data.envelopes.find((envelope) => envelope.name === "Libre")?.balance ?? 0;
+  const libreBalance = data.dashboard.libre;
   const libreUsado = Math.max(0, libreTotal - libreBalance);
   const goal = data.goals.ahorro;
-  const committed = data.payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const committed = data.dashboard.committed;
   const cardCommitted = data.creditCards.reduce((sum, card) => sum + card.used, 0);
   const fixedCommitted = data.payments
     .filter((payment) => payment.chip === "Fijos")
@@ -33,6 +35,12 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
     .filter((payment) => payment.chip === "MSI")
     .reduce((sum, payment) => sum + payment.amount, 0);
   const goalPct = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0;
+  const filteredTransactions = useMemo(() => {
+    const start = new Date();
+    start.setDate(start.getDate() - periodDays);
+
+    return data.transactions.filter((transaction) => new Date(transaction.dateIso) >= start);
+  }, [data.transactions, periodDays]);
 
   return (
     <>
@@ -101,6 +109,28 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
           </div>
         </Card>
 
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            [14, "14 días"],
+            [30, "30 días"],
+            [90, "90 días"],
+          ].map(([days, label]) => (
+            <button
+              key={days}
+              type="button"
+              onClick={() => setPeriodDays(Number(days))}
+              className="h-9 rounded-xl border text-[12px] font-medium"
+              style={{
+                background: periodDays === days ? FT.accentSoft : "rgba(255,255,255,0.04)",
+                borderColor: periodDays === days ? "rgba(42,91,255,0.45)" : "rgba(255,255,255,0.08)",
+                color: periodDays === days ? FT.accent : FT.textDim,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <Card className="p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -128,6 +158,25 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
             <span>may ’26</span>
           </div>
         </Card>
+
+        {data.dashboard.alerts.length > 0 ? (
+          <Card className="border-[#F5B5442e] bg-[#F5B5440f] p-4">
+            <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Alertas</div>
+            <div className="mt-3 flex flex-col gap-2">
+              {data.dashboard.alerts.map((alert) => (
+                <div key={`${alert.label}-${alert.detail}`} className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[14px] font-semibold">{alert.label}</div>
+                    <div className="mt-0.5 text-[12px] text-[#a4adbe]">{alert.detail}</div>
+                  </div>
+                  <Tag color={alert.tone === "danger" ? FT.danger : FT.warn} bg={alert.tone === "danger" ? "rgba(244,106,106,0.14)" : FT.warnSoft}>
+                    {alert.tone === "danger" ? "revisar" : "límite"}
+                  </Tag>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ) : null}
 
         <div>
           <SectionHeader title="Tarjetas · ciclo actual" action="Ver todas →" />
@@ -172,9 +221,12 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
         <div>
           <SectionHeader title="Movimientos recientes" action="Ver todos →" />
           <Card className="overflow-hidden">
-            {data.transactions.map((tx, index) => (
-              <TransactionRow key={`${tx.merchant}-${tx.date}`} {...tx} last={index === data.transactions.length - 1} />
+            {filteredTransactions.map((tx, index) => (
+              <TransactionRow key={`${tx.merchant}-${tx.date}`} {...tx} last={index === filteredTransactions.length - 1} />
             ))}
+            {filteredTransactions.length === 0 ? (
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">Sin movimientos en este periodo.</div>
+            ) : null}
           </Card>
         </div>
       </div>
