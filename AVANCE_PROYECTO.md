@@ -19,16 +19,63 @@ Stack actualmente configurado:
 
 Estado importante:
 
-- La interfaz está maquetada y alimentada por datos reales desde Supabase.
-- La base de datos está modelada en Prisma.
-- Ya existe conexión Supabase configurada vía `.env.local`.
-- Ya se aplicó la migración inicial en Supabase.
-- Ya se aplicó una migración de seguridad para activar RLS y revocar acceso por Data API.
-- Prisma Client ya puede consultar la base con `@prisma/adapter-pg`.
-- La pantalla principal ya lee datos reales desde Supabase vía Prisma.
-- Ya existe seed idempotente para datos iniciales reales.
-- Ya existe una primera server action conectada a Prisma para crear gastos manuales.
-- Todavía no hay autenticación.
+- [x] La interfaz está maquetada y alimentada por datos reales desde Supabase.
+- [x] La base de datos está modelada en Prisma.
+- [x] Ya existe conexión Supabase configurada vía `.env.local`.
+- [x] Ya se aplicó la migración inicial en Supabase.
+- [x] Ya se aplicó una migración de seguridad para activar RLS y revocar acceso por Data API.
+- [x] Prisma Client ya puede consultar la base con `@prisma/adapter-pg`.
+- [x] La pantalla principal ya lee datos reales desde Supabase vía Prisma.
+- [x] Ya existe seed idempotente para datos iniciales reales.
+- [x] Ya existe una primera server action conectada a Prisma para crear gastos manuales.
+- [ ] Todavía no hay autenticación.
+
+### 1.1 Checklist de avance
+
+#### Completado
+
+- [x] Migrar la maqueta desde `project/` a una app Next.js real.
+- [x] Configurar Next.js App Router, TypeScript y Tailwind CSS.
+- [x] Crear componentes base compatibles con shadcn/ui.
+- [x] Configurar Prisma ORM con PostgreSQL/Supabase.
+- [x] Definir el modelo de datos inicial en `prisma/schema.prisma`.
+- [x] Crear seed idempotente con datos iniciales reales.
+- [x] Aplicar migración inicial en Supabase.
+- [x] Activar RLS y revocar acceso Data API para tablas de dominio.
+- [x] Endurecer acceso a `_prisma_migrations`.
+- [x] Conectar Prisma Client con `@prisma/adapter-pg`.
+- [x] Reemplazar datos mock del dashboard por `getFinanceSnapshot()`.
+- [x] Implementar PWA básica con manifest, icono y service worker.
+- [x] Implementar primera server action para crear gasto manual.
+- [x] Implementar primera server action para confirmar distribución de ingreso.
+- [x] Implementar primera acción para registrar pago de tarjeta.
+- [x] Crear cálculo inicial de ciclo de tarjeta por fecha de corte.
+- [x] Asociar gastos de tarjeta al ciclo calculado.
+- [x] Crear fingerprint único para detectar duplicados exactos.
+
+#### Parcial
+
+- [ ] Registro de gasto completo: falta fecha/hora editable, React Hook Form, MSI como `InstallmentPlan`, mejor confirmación visual y duplicados tolerantes.
+- [ ] Distribución de quincena completa: falta capturar nuevo ingreso desde pantalla, fecha de recepción, plantillas editables y React Hook Form.
+- [ ] Registro de pagos de tarjeta: falta cierre formal de ciclo, histórico y pagos parciales editables.
+- [ ] Dashboard con cálculos de dominio: falta extraer servicios puros, alertas, filtros y compromisos completos.
+- [ ] Saldos confiables de sobres/cuentas: falta derivarlos completamente desde movimientos, allocations, pagos y ajustes auditables.
+
+#### Pendiente
+
+- [ ] Autenticación simple.
+- [ ] Configuración inicial/onboarding.
+- [ ] CRUD de cuentas/sobres.
+- [ ] CRUD de tarjetas.
+- [ ] CRUD de categorías.
+- [ ] CRUD de metas de ahorro.
+- [ ] Alta/edición de presupuestos.
+- [ ] Detalle completo de movimientos.
+- [ ] Reportes mensuales y por ciclo.
+- [ ] Calendario de pagos.
+- [ ] Importación por captura, OCR y PDF.
+- [ ] Usuario dedicado para Prisma en Supabase.
+- [ ] Pruebas unitarias e integración para reglas críticas.
 
 ## 2. Supabase: siguientes pasos
 
