@@ -106,7 +106,7 @@ Los archivos originales exportados desde Claude Design se conservan en `project/
 Pantallas migradas:
 
 - Dashboard
-- Tarjeta BBVA / ciclo actual
+- Tarjetas / ciclo actual
 - Sobres y cuentas
 - Distribución de quincena
 - Registro de gasto
@@ -116,5 +116,5 @@ Pantallas migradas:
 ```bash
 npm run build
 npx prisma validate
-npm run prisma:seed
+npm run prisma:generate
 ```

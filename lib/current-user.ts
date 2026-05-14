@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { ensureInitialFinanceData } from "@/lib/initial-finance-data";
 
 export async function getCurrentFinanceUser() {
   const session = await auth.api.getSession({
@@ -23,8 +22,6 @@ export async function getCurrentFinanceUser() {
       name: session.user.name || session.user.email.split("@")[0] || "Usuario",
     },
   });
-
-  await ensureInitialFinanceData(user.id);
 
   return user;
 }

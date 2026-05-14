@@ -9,8 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node prisma/seed.cjs"
+    "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",

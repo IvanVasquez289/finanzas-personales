@@ -13,6 +13,7 @@ export type RegisterCardPaymentState = {
 const registerCardPaymentSchema = z.object({
   cycleId: z.string().min(1, "Selecciona un ciclo."),
   amount: z.coerce.number().positive("El pago debe ser mayor a cero."),
+  paymentAccountId: z.string().optional(),
 });
 
 export async function registerCardPaymentAction(
@@ -22,6 +23,7 @@ export async function registerCardPaymentAction(
   const parsed = registerCardPaymentSchema.safeParse({
     cycleId: formData.get("cycleId"),
     amount: formData.get("amount"),
+    paymentAccountId: formData.get("paymentAccountId") || undefined,
   });
 
   if (!parsed.success) {
@@ -47,6 +49,28 @@ export async function registerCardPaymentAction(
 
   if (!cycle) {
     return { ok: false, message: "El ciclo seleccionado no existe." };
+  }
+
+  const paymentAccount = parsed.data.paymentAccountId
+    ? await prisma.account.findFirst({
+        where: {
+          id: parsed.data.paymentAccountId,
+          userId: user.id,
+          isActive: true,
+          type: { in: ["debit", "cash", "savings", "envelope"] },
+        },
+      })
+    : await prisma.account.findFirst({
+        where: {
+          userId: user.id,
+          isActive: true,
+          type: { in: ["debit", "cash", "savings", "envelope"] },
+        },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      });
+
+  if (!paymentAccount) {
+    return { ok: false, message: "Crea o selecciona una cuenta origen para pagar la tarjeta." };
   }
 
   await prisma.$transaction(async (tx) => {
@@ -76,13 +100,9 @@ export async function registerCardPaymentAction(
       },
     });
 
-    const paymentEnvelope = await tx.account.findFirst({
-      where: { userId: user.id, name: "Pago tarjetas", isActive: true },
-    });
-
-    if (paymentEnvelope && deltaCents !== 0) {
+    if (deltaCents !== 0) {
       await tx.account.update({
-        where: { id: paymentEnvelope.id },
+        where: { id: paymentAccount.id },
         data: { currentBalanceCents: { decrement: deltaCents } },
       });
     }
@@ -96,7 +116,7 @@ export async function registerCardPaymentAction(
       },
       create: {
         userId: user.id,
-        accountId: paymentEnvelope?.id ?? cycle.creditAccount.accountId,
+        accountId: paymentAccount.id,
         creditCardCycleId: cycle.id,
         date: today,
         merchantNormalized: `PAGO ${cycle.creditAccount.account.name.toUpperCase()}`,

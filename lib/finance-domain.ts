@@ -86,14 +86,20 @@ export function calculateDashboardMetrics({
   transactions,
 }: {
   balances: AccountBalance[];
-  accounts: Pick<Account, "id" | "name">[];
+  accounts: Pick<Account, "id" | "name" | "type">[];
   cardDueCents: number;
   installmentCents: number;
   budgets: (Budget & { category?: Category | null; account?: Account | null })[];
   transactions: Pick<Transaction, "categoryId" | "accountId" | "amountCents" | "direction" | "status" | "date">[];
 }): DashboardMetrics {
-  const libreAccount = accounts.find((account) => account.name === "Libre");
-  const libreCents = balances.find((balance) => balance.accountId === libreAccount?.id)?.balanceCents ?? 0;
+  const spendableAccountIds = new Set(
+    accounts
+      .filter((account) => ["debit", "cash", "envelope", "savings"].includes(account.type))
+      .map((account) => account.id),
+  );
+  const libreCents = balances
+    .filter((balance) => spendableAccountIds.has(balance.accountId))
+    .reduce((sum, balance) => sum + balance.balanceCents, 0);
   const committedCents = cardDueCents + installmentCents;
   const now = new Date();
   const alerts = budgets.flatMap((budget) => {
@@ -120,10 +126,12 @@ export function calculateDashboardMetrics({
     }];
   });
 
-  if (libreCents < 0) {
+  for (const balance of balances) {
+    if (balance.balanceCents >= 0 || !spendableAccountIds.has(balance.accountId)) continue;
+    const account = accounts.find((item) => item.id === balance.accountId);
     alerts.unshift({
-      label: "Libre",
-      detail: "El sobre Libre está en negativo",
+      label: account?.name ?? "Cuenta",
+      detail: "El saldo está en negativo",
       tone: "danger",
     });
   }

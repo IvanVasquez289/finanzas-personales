@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, CalendarDays, CreditCard, PiggyBank, WalletCards } from "lucide-react";
+import { ArrowLeft, WalletCards } from "lucide-react";
 import { AllocationSlider } from "@/components/income/allocation-slider";
 import { BigNum } from "@/components/finance/big-num";
 import { SegmentBar } from "@/components/finance/segment-bar";
@@ -35,32 +35,46 @@ export function DistributionScreen({
     },
   });
   const ingreso = form.watch("amount") || 0;
-  const [vals, setVals] = useState({
-    pago: data.allocation.pagoTarjetas,
-    ahorro: data.allocation.ahorro,
-    fijos: data.allocation.fijos,
-    libre: data.allocation.libre,
+  const distributableAccounts = [
+    ...data.envelopes.map((account) => ({
+      id: account.id,
+      name: account.name,
+      balance: account.balance,
+      color: account.color,
+      note: account.note,
+    })),
+    ...data.bankAccounts.map((account) => ({
+      id: account.id,
+      name: account.name,
+      balance: account.balance,
+      color: FT.textDim,
+      note: account.sub,
+    })),
+  ];
+  const [vals, setVals] = useState<Record<string, number>>(() => {
+    const current = new Map(data.allocation.items.map((item) => [item.accountId, item.amount]));
+    return Object.fromEntries(distributableAccounts.map((account) => [account.id, current.get(account.id) ?? 0]));
   });
   const [state, formAction, pending] = useActionState(confirmDistributionAction, {
     ok: false,
     message: "",
   });
-  const total = vals.pago + vals.ahorro + vals.fijos + vals.libre;
+  const total = distributableAccounts.reduce((sum, account) => sum + (vals[account.id] ?? 0), 0);
   const diff = ingreso - total;
   const applySuggestion = () => {
-    const pago = Math.min(2500, ingreso);
-    const ahorro = Math.min(3000, Math.max(0, ingreso - pago));
-    const fijos = Math.min(1000, Math.max(0, ingreso - pago - ahorro));
-    const libre = Math.max(0, ingreso - pago - ahorro - fijos);
+    if (distributableAccounts.length === 0) return;
+    const base = Math.floor((ingreso / distributableAccounts.length) / 50) * 50;
+    let remaining = ingreso;
+    const next: Record<string, number> = {};
 
-    setVals({ pago, ahorro, fijos, libre });
+    distributableAccounts.forEach((account, index) => {
+      const value = index === distributableAccounts.length - 1 ? remaining : Math.min(base, remaining);
+      next[account.id] = value;
+      remaining -= value;
+    });
+
+    setVals(next);
   };
-  const sobres = [
-    { key: "pago" as const, name: "Pago tarjetas", sugerido: Math.min(2500, ingreso), color: FT.accent, note: "Cubre tarjetas y MSI", icon: CreditCard },
-    { key: "ahorro" as const, name: "Ahorro", sugerido: Math.min(3000, Math.max(0, ingreso - 2500)), color: FT.pos, note: "Meta $48,000", icon: PiggyBank },
-    { key: "fijos" as const, name: "Fijos", sugerido: Math.min(1000, Math.max(0, ingreso - 5500)), color: "#8B6CF0", note: "Pagos obligatorios del periodo", icon: CalendarDays },
-    { key: "libre" as const, name: "Libre", sugerido: Math.max(0, ingreso - 6500), color: FT.warn, note: "Gastos variables del periodo", icon: WalletCards },
-  ];
 
   useEffect(() => {
     if (!state.ok) return;
@@ -71,10 +85,9 @@ export function DistributionScreen({
 
   return (
     <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
-      <input type="hidden" name="pago" value={vals.pago} />
-      <input type="hidden" name="ahorro" value={vals.ahorro} />
-      <input type="hidden" name="fijos" value={vals.fijos} />
-      <input type="hidden" name="libre" value={vals.libre} />
+      {distributableAccounts.map((account) => (
+        <input key={account.id} type="hidden" name="allocation" value={`${account.id}:${vals[account.id] ?? 0}`} />
+      ))}
       <div className="flex items-center justify-between px-4 pb-4">
         <Button type="button" variant="secondary" size="icon" aria-label="Regresar" onClick={onBack}><ArrowLeft size={16} /></Button>
         <div className="text-[14px] text-[#a4adbe]">Paso 2 de 3</div>
@@ -127,10 +140,7 @@ export function DistributionScreen({
           </div>
           <SegmentBar
             segments={[
-              { value: vals.pago, color: FT.accent },
-              { value: vals.ahorro, color: FT.pos },
-              { value: vals.fijos, color: "#8B6CF0" },
-              { value: vals.libre, color: FT.warn },
+              ...distributableAccounts.map((account) => ({ value: vals[account.id] ?? 0, color: account.color })),
               ...(diff > 0 ? [{ value: diff, color: "rgba(255,255,255,0.06)" }] : []),
             ]}
           />
@@ -143,19 +153,28 @@ export function DistributionScreen({
       </div>
       <div className="no-scrollbar flex-1 overflow-auto px-4 app-bottom-scroll">
         <div className="flex flex-col gap-2.5">
-          {sobres.map(({ key, ...sobre }) => (
+          {distributableAccounts.map((account) => (
             <AllocationSlider
-              key={key}
-              {...sobre}
-              value={vals[key]}
+              key={account.id}
+              name={account.name}
+              note={account.note}
+              color={account.color}
+              icon={WalletCards}
+              sugerido={distributableAccounts.length > 0 ? ingreso / distributableAccounts.length : 0}
+              value={vals[account.id] ?? 0}
               ingreso={ingreso}
-              onChange={(value) => setVals((current) => ({ ...current, [key]: value }))}
+              onChange={(value) => setVals((current) => ({ ...current, [account.id]: value }))}
             />
           ))}
+          {distributableAccounts.length === 0 ? (
+            <Card className="p-4 text-center text-[13px] text-[#a4adbe]">
+              Crea primero tus cuentas o sobres desde configuración inicial.
+            </Card>
+          ) : null}
         </div>
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#06080c] from-60% to-transparent px-4 app-bottom-fixed pt-3">
-        <Button className="w-full" disabled={diff !== 0 || pending}>
+        <Button className="w-full" disabled={diff !== 0 || pending || distributableAccounts.length === 0}>
           {pending ? "Confirmando" : "Confirmar distribución"}
         </Button>
       </div>

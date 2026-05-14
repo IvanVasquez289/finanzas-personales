@@ -7,14 +7,28 @@ import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 
-export function OnboardingScreen({ data, onBack }: { data: FinanceSnapshot; onBack: () => void }) {
+export function OnboardingScreen({
+  data,
+  onBack,
+  onAccounts,
+  onCards,
+  onPlan,
+  onIncome,
+}: {
+  data: FinanceSnapshot;
+  onBack: () => void;
+  onAccounts: () => void;
+  onCards: () => void;
+  onPlan: () => void;
+  onIncome: () => void;
+}) {
   const checks = [
-    { label: "Ingreso inicial", done: data.income.amount > 0 },
-    { label: "Sobres activos", done: data.envelopes.length > 0 },
-    { label: "Tarjetas configuradas", done: data.creditCards.length > 0 },
-    { label: "Categorías", done: data.expenseForm.categories.length > 0 },
-    { label: "Meta de ahorro", done: data.goals.ahorro.targetAmount > 0 },
-    { label: "Presupuestos", done: data.settings.budgets.length > 0 },
+    { label: "Sobres y cuentas", done: data.envelopes.length > 0 || data.bankAccounts.length > 0, action: onAccounts },
+    { label: "Categorías", done: data.expenseForm.categories.length > 0, action: onAccounts },
+    { label: "Tarjetas", done: data.creditCards.length > 0, action: onCards },
+    { label: "Meta", done: data.goals.ahorro.targetAmount > 0, action: onPlan },
+    { label: "Presupuestos", done: data.settings.budgets.length > 0, action: onAccounts },
+    { label: "Ingreso inicial", done: data.income.amount > 0, action: onIncome },
   ];
   const progress = checks.filter((check) => check.done).length;
 
@@ -31,7 +45,7 @@ export function OnboardingScreen({ data, onBack }: { data: FinanceSnapshot; onBa
       <Card className="p-4">
         <div className="text-[18px] font-semibold">Configuración inicial</div>
         <p className="mt-1 text-[12px] leading-[1.45] text-[#a4adbe]">
-          Checklist para dejar el MVP listo antes de usarlo como sistema diario.
+          Empieza vacío y configura tus propias cuentas, categorías, tarjetas, metas y presupuestos.
         </p>
       </Card>
 
@@ -43,10 +57,12 @@ export function OnboardingScreen({ data, onBack }: { data: FinanceSnapshot; onBa
             return (
               <div key={check.label} className={`flex items-center gap-3 px-4 py-3.5 ${index === checks.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <Icon size={18} color={check.done ? FT.pos : FT.textFade} />
-                <div className="flex-1 text-[14px] font-medium">{check.label}</div>
-                <div className="text-[12px]" style={{ color: check.done ? FT.pos : FT.textMute }}>
-                  {check.done ? "listo" : "pendiente"}
-                </div>
+                <button type="button" onClick={check.action} className="flex flex-1 items-center justify-between gap-3 text-left">
+                  <span className="text-[14px] font-medium">{check.label}</span>
+                  <span className="text-[12px]" style={{ color: check.done ? FT.pos : FT.textMute }}>
+                    {check.done ? "listo" : "configurar"}
+                  </span>
+                </button>
               </div>
             );
           })}

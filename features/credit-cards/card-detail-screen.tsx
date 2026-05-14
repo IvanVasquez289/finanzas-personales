@@ -54,8 +54,9 @@ export function CardDetailScreen({
   const pct = card.budget > 0 ? card.used / card.budget : 0;
   const categories = card.categorySpend;
   const installmentRows = data.payments.filter(
-    (payment) => (payment.chip === "MSI" || payment.chip === "Fijos") && (!payment.accountId || payment.accountId === card.accountId),
+    (payment) => (payment.chip === "MSI" || payment.chip === "Sobre") && (!payment.accountId || payment.accountId === card.accountId),
   );
+  const paymentSources = data.expenseForm.accounts.filter((account) => account.paymentMethod !== "credit_card");
   const [paymentAmount, setPaymentAmount] = useState(card.due);
 
   useEffect(() => {
@@ -162,6 +163,18 @@ export function CardDetailScreen({
           <form action={paymentAction} className="mt-4">
             <input type="hidden" name="cycleId" value={card.cycleId} />
             <label className="mb-2 block text-[12px] text-[#6a7384]">
+              Cuenta origen
+              <select
+                name="paymentAccountId"
+                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                defaultValue={paymentSources[0]?.id ?? ""}
+              >
+                {paymentSources.map((source) => (
+                  <option key={source.id} value={source.id}>{source.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="mb-2 block text-[12px] text-[#6a7384]">
               Pago a registrar
               <input
                 name="amount"
@@ -174,8 +187,8 @@ export function CardDetailScreen({
                 className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
-            <Button className="w-full" disabled={paymentPending || card.due <= 0}>
-              {card.due > 0 ? `Registrar pago de ${money(paymentAmount)}` : "Ciclo pagado"}
+            <Button className="w-full" disabled={paymentPending || card.due <= 0 || paymentSources.length === 0}>
+              {paymentSources.length === 0 ? "Crea una cuenta origen" : card.due > 0 ? `Registrar pago de ${money(paymentAmount)}` : "Ciclo pagado"}
             </Button>
             {paymentState.message ? (
               <div className="mt-2 text-center text-[12px]" style={{ color: paymentState.ok ? FT.pos : FT.danger }}>

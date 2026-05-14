@@ -39,19 +39,31 @@ export function DashboardScreen({
   onViewOnboarding: () => void;
 }) {
   const [periodDays, setPeriodDays] = useState(30);
-  const libreTotal = data.allocation.libre;
+  const allocationItems = data.allocation.items.length > 0
+    ? data.allocation.items
+    : data.envelopes.map((envelope) => ({
+        accountId: envelope.id,
+        name: envelope.name,
+        amount: envelope.balance,
+        color: envelope.color,
+      }));
+  const libreTotal = allocationItems.reduce((sum, item) => sum + item.amount, 0);
   const libreBalance = data.dashboard.libre;
   const libreUsado = Math.max(0, libreTotal - libreBalance);
   const goal = data.goals.ahorro;
   const committed = data.dashboard.committed;
   const cardCommitted = data.creditCards.reduce((sum, card) => sum + card.used, 0);
   const fixedCommitted = data.payments
-    .filter((payment) => payment.chip === "Fijos")
+    .filter((payment) => payment.chip === "Sobre")
     .reduce((sum, payment) => sum + payment.amount, 0);
   const msiCommitted = data.payments
     .filter((payment) => payment.chip === "MSI")
     .reduce((sum, payment) => sum + payment.amount, 0);
   const goalPct = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0;
+  const needsSetup =
+    data.envelopes.length === 0 ||
+    data.expenseForm.categories.length === 0 ||
+    data.goals.ahorro.targetAmount <= 0;
   const filteredTransactions = useMemo(() => {
     const start = new Date();
     start.setDate(start.getDate() - periodDays);
@@ -85,40 +97,30 @@ export function DashboardScreen({
           <div className="absolute inset-0 opacity-40 [background:linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px)_0_0/100%_28px]" />
           <div className="relative">
             <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-[13px] text-[#a4adbe]">Te quedan libres</span>
+              <span className="text-[13px] text-[#a4adbe]">Disponible en cuentas</span>
               <Tag color={FT.pos} bg={FT.posSoft}>
                 <Dot color={FT.pos} /> En camino
               </Tag>
             </div>
             <BigNum value={libreTotal - libreUsado} size={48} />
             <p className="mt-1.5 text-[12px] text-[#6a7384]">
-              de <span className="font-mono">{money(libreTotal)}</span> · te alcanza ~9 días
+              de <span className="font-mono">{money(libreTotal)}</span> asignados en el periodo
             </p>
             <div className="mt-[18px]">
               <SegmentBar
                 height={10}
-                segments={[
-                  { value: data.allocation.pagoTarjetas, color: FT.accent },
-                  { value: data.allocation.fijos, color: "#8B6CF0" },
-                  { value: libreUsado, color: FT.warn },
-                  { value: libreTotal - libreUsado, color: "rgba(255,255,255,0.10)" },
-                  { value: data.allocation.ahorro, color: FT.pos },
-                ]}
+                segments={allocationItems.length > 0
+                  ? allocationItems.map((item) => ({ value: item.amount, color: item.color }))
+                  : [{ value: 1, color: "rgba(255,255,255,0.08)" }]}
               />
-              <div className="mt-3 grid grid-cols-5 gap-2 text-[10px]">
-                {[
-                  ["Tarjetas", data.allocation.pagoTarjetas, FT.accent],
-                  ["Fijos", data.allocation.fijos, "#8B6CF0"],
-                  ["Libre usado", libreUsado, FT.warn],
-                  ["Libre", libreTotal - libreUsado, "rgba(255,255,255,0.5)"],
-                  ["Ahorro", data.allocation.ahorro, FT.pos],
-                ].map(([label, value, color]) => (
-                  <div key={String(label)}>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                {(allocationItems.length > 0 ? allocationItems : [{ accountId: "empty", name: "Sin asignaciones", amount: 0, color: "rgba(255,255,255,0.5)" }]).slice(0, 6).map((item) => (
+                  <div key={item.accountId}>
                     <div className="mb-0.5 flex items-center gap-1 text-[#6a7384]">
-                      <Dot color={String(color)} />
-                      <span>{label}</span>
+                      <Dot color={item.color} />
+                      <span>{item.name}</span>
                     </div>
-                    <div className="font-mono text-[11px] tabular-nums text-[#eef2f8]">{money(Number(value))}</div>
+                    <div className="font-mono text-[11px] tabular-nums text-[#eef2f8]">{money(item.amount)}</div>
                   </div>
                 ))}
               </div>
@@ -154,6 +156,22 @@ export function DashboardScreen({
           <QuickAction icon={ScanText} label="Importar" onClick={onViewImports} />
           <QuickAction icon={SlidersHorizontal} label="Setup" onClick={onViewOnboarding} />
         </div>
+
+        {needsSetup ? (
+          <Card className="border-[#2A5BFF2e] bg-[#2A5BFF0f] p-4">
+            <div className="text-[15px] font-semibold">Configura tu sistema financiero</div>
+            <p className="mt-1 text-[12px] leading-[1.45] text-[#a4adbe]">
+              Esta cuenta está vacía. Crea tus sobres, categorías, tarjetas y meta antes de registrar el primer flujo.
+            </p>
+            <button
+              type="button"
+              onClick={onViewOnboarding}
+              className="mt-3 h-10 rounded-xl bg-[#2A5BFF] px-4 text-[13px] font-semibold text-white"
+            >
+              Abrir configuración inicial
+            </button>
+          </Card>
+        ) : null}
 
         <Card className="p-4">
           <div className="flex items-start justify-between">
@@ -236,7 +254,7 @@ export function DashboardScreen({
           <Bars
             data={[
               { label: "Tarjetas", value: cardCommitted, color: FT.accent },
-              { label: "Pagos fijos", value: fixedCommitted, color: "#8B6CF0" },
+              { label: "Sobres", value: fixedCommitted, color: "#8B6CF0" },
               { label: "MSI activos", value: msiCommitted, color: FT.warn },
             ]}
           />

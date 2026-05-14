@@ -12,19 +12,8 @@ export type ConfirmDistributionState = {
 
 const confirmDistributionSchema = z.object({
   amount: z.coerce.number().positive("El ingreso debe ser mayor a cero."),
-  pago: z.coerce.number().min(0, "Pago tarjetas no puede ser negativo."),
-  ahorro: z.coerce.number().min(0, "Ahorro no puede ser negativo."),
-  fijos: z.coerce.number().min(0, "Fijos no puede ser negativo."),
-  libre: z.coerce.number().min(0, "Libre no puede ser negativo."),
   receivedAt: z.string().min(1, "Selecciona la fecha de recepción."),
 });
-
-const allocationTargets = [
-  ["pago", "Pago tarjetas"],
-  ["ahorro", "Ahorro"],
-  ["fijos", "Fijos"],
-  ["libre", "Libre"],
-] as const;
 
 export async function confirmDistributionAction(
   _previousState: ConfirmDistributionState,
@@ -32,10 +21,6 @@ export async function confirmDistributionAction(
 ): Promise<ConfirmDistributionState> {
   const parsed = confirmDistributionSchema.safeParse({
     amount: formData.get("amount"),
-    pago: formData.get("pago"),
-    ahorro: formData.get("ahorro"),
-    fijos: formData.get("fijos"),
-    libre: formData.get("libre"),
     receivedAt: formData.get("receivedAt"),
   });
 
@@ -47,10 +32,22 @@ export async function confirmDistributionAction(
   }
 
   const values = parsed.data;
-  const total = values.pago + values.ahorro + values.fijos + values.libre;
+  const allocationInputs = formData.getAll("allocation").map((value) => {
+    const [accountId, amount] = String(value).split(":");
+    return {
+      accountId,
+      amount: Number(amount),
+    };
+  });
+  const validAllocationInputs = allocationInputs.filter((input) => input.accountId && Number.isFinite(input.amount) && input.amount >= 0);
+  const total = validAllocationInputs.reduce((sum, input) => sum + input.amount, 0);
 
   if (Math.round(total * 100) !== Math.round(values.amount * 100)) {
     return { ok: false, message: "La distribución debe cuadrar con el ingreso." };
+  }
+
+  if (validAllocationInputs.length === 0) {
+    return { ok: false, message: "Crea al menos una cuenta o sobre para distribuir." };
   }
 
   const user = await getCurrentFinanceUser();
@@ -66,15 +63,16 @@ export async function confirmDistributionAction(
   const accounts = await prisma.account.findMany({
     where: {
       userId: user.id,
-      name: { in: allocationTargets.map(([, name]) => name) },
+      id: { in: validAllocationInputs.map((input) => input.accountId) },
       isActive: true,
+      type: { in: ["debit", "savings", "cash", "envelope"] },
     },
   });
-  const accountByName = new Map(accounts.map((account) => [account.name, account]));
-  const missingAccount = allocationTargets.find(([, name]) => !accountByName.has(name));
+  const accountById = new Map(accounts.map((account) => [account.id, account]));
+  const missingAccount = validAllocationInputs.find((input) => !accountById.has(input.accountId));
 
   if (missingAccount) {
-    return { ok: false, message: `Falta el sobre ${missingAccount[1]}.` };
+    return { ok: false, message: "Una cuenta seleccionada ya no está disponible." };
   }
 
   await prisma.$transaction(async (tx) => {
@@ -94,48 +92,60 @@ export async function confirmDistributionAction(
       },
     });
 
-    for (const [key, accountName] of allocationTargets) {
-      const account = accountByName.get(accountName);
+    const previousAllocations = await tx.allocation.findMany({
+      where: { incomeEventId: income.id },
+      include: { account: true },
+    });
+    let previousSavingsCents = 0;
+    let nextSavingsCents = 0;
+
+    for (const allocation of previousAllocations) {
+      if (allocation.account.type === "savings") previousSavingsCents += allocation.amountCents;
+      await tx.account.update({
+        where: { id: allocation.accountId },
+        data: { currentBalanceCents: { decrement: allocation.amountCents } },
+      });
+    }
+
+    await tx.allocation.deleteMany({
+      where: { incomeEventId: income.id },
+    });
+
+    for (const input of validAllocationInputs) {
+      const account = accountById.get(input.accountId);
       if (!account) continue;
 
       const allocationId = `${income.id}:${account.id}`;
-      const nextAmountCents = toCents(values[key]);
-      const existingAllocation = await tx.allocation.findUnique({
-        where: { id: allocationId },
-      });
-      const previousAmountCents = existingAllocation?.amountCents ?? 0;
-      const deltaCents = nextAmountCents - previousAmountCents;
+      const nextAmountCents = toCents(input.amount);
+      if (account.type === "savings") nextSavingsCents += nextAmountCents;
 
-      await tx.allocation.upsert({
-        where: { id: allocationId },
-        update: { amountCents: nextAmountCents },
-        create: {
+      await tx.allocation.create({
+        data: {
           id: allocationId,
           incomeEventId: income.id,
           accountId: account.id,
           amountCents: nextAmountCents,
-        },
+        }
       });
 
-      if (deltaCents !== 0) {
-        await tx.account.update({
-          where: { id: account.id },
-          data: { currentBalanceCents: { increment: deltaCents } },
+      await tx.account.update({
+        where: { id: account.id },
+        data: { currentBalanceCents: { increment: nextAmountCents } },
+      });
+    }
+
+    const savingsDeltaCents = nextSavingsCents - previousSavingsCents;
+    if (savingsDeltaCents !== 0) {
+      const goal = await tx.goal.findFirst({
+        where: { userId: user.id, status: "active" },
+        orderBy: { createdAt: "asc" },
+      });
+
+      if (goal) {
+        await tx.goal.update({
+          where: { id: goal.id },
+          data: { currentAmountCents: { increment: savingsDeltaCents } },
         });
-
-        if (account.name === "Ahorro") {
-          const goal = await tx.goal.findFirst({
-            where: { userId: user.id, status: "active" },
-            orderBy: { createdAt: "asc" },
-          });
-
-          if (goal) {
-            await tx.goal.update({
-              where: { id: goal.id },
-              data: { currentAmountCents: { increment: deltaCents } },
-            });
-          }
-        }
       }
     }
 

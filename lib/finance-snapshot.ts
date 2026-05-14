@@ -17,6 +17,12 @@ export type FinanceSnapshot = {
     ahorro: number;
     fijos: number;
     libre: number;
+    items: {
+      accountId: string;
+      name: string;
+      amount: number;
+      color: string;
+    }[];
   };
   dashboard: {
     libre: number;
@@ -193,14 +199,10 @@ function formatCycle(start: Date, end: Date) {
 }
 
 function envelopeMeta(name: string) {
-  const meta: Record<string, { color: string; note: string; locked?: boolean }> = {
-    Ahorro: { color: "#3DD68C", note: "No tocar · meta MacBook", locked: true },
-    "Pago tarjetas": { color: "#2A5BFF", note: "Reservado para tarjetas" },
-    Fijos: { color: "#8B6CF0", note: "Pagos obligatorios del periodo" },
-    Libre: { color: "#F5B544", note: "Gastos variables" },
-  };
+  const palette = ["#2A5BFF", "#3DD68C", "#F5B544", "#8B6CF0", "#3DD6C9", "#E94B6A"];
+  const color = palette[Math.abs(hashText(name)) % palette.length] ?? "#a4adbe";
 
-  return meta[name] ?? { color: "#a4adbe", note: "Cuenta activa" };
+  return { color, note: "Cuenta activa" };
 }
 
 function cardColor(name: string) {
@@ -324,17 +326,23 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     ahorro: 0,
     fijos: 0,
     libre: 0,
+    items: [] as FinanceSnapshot["allocation"]["items"],
   };
 
   for (const item of latestIncome?.allocations ?? []) {
-    if (item.account.name === "Pago tarjetas") allocation.pagoTarjetas += toAmount(item.amountCents);
-    if (item.account.name === "Ahorro") allocation.ahorro += toAmount(item.amountCents);
-    if (item.account.name === "Fijos") allocation.fijos += toAmount(item.amountCents);
-    if (item.account.name === "Libre") allocation.libre += toAmount(item.amountCents);
+    allocation.items.push({
+      accountId: item.accountId,
+      name: item.account.name,
+      amount: toAmount(item.amountCents),
+      color: envelopeMeta(item.account.name).color,
+    });
   }
 
   const mainGoal = goals[0];
-  const savingAccount = accounts.find((account) => account.name === "Ahorro");
+  const savingAccount = accounts.find((account) => account.type === "savings");
+  const savingsAllocation = latestIncome?.allocations
+    .filter((item) => item.account.type === "savings")
+    .reduce((sum, item) => sum + toAmount(item.amountCents), 0) ?? 0;
 
   const envelopes = accounts
     .filter((account) => ["savings", "envelope"].includes(account.type))
@@ -347,8 +355,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         color: meta.color,
         note: meta.note,
         sortOrder: account.sortOrder,
-        locked: meta.locked,
-        goal: account.name === "Ahorro" && mainGoal ? toAmount(mainGoal.targetAmountCents) : undefined,
+        goal: account.type === "savings" && mainGoal ? toAmount(mainGoal.targetAmountCents) : undefined,
       };
     });
 
@@ -418,7 +425,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       date: formatShortDate(plan.startDate),
       dateIso: plan.startDate.toISOString(),
       amount: toAmount(plan.monthlyAmountCents),
-      chip: plan.account.type === "envelope" ? "Fijos" : "MSI",
+      chip: plan.account.type === "envelope" ? "Sobre" : "MSI",
       chipColor: plan.account.type === "store_card" ? "#E94B6A" : undefined,
     })),
     ...creditCards.map((card) => ({
@@ -461,10 +468,10 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     },
     goals: {
       ahorro: {
-        name: mainGoal?.name ?? "Meta de ahorro",
+        name: mainGoal?.name ?? "Meta",
         currentAmount: mainGoal ? toAmount(mainGoal.currentAmountCents) : toAmount(savingAccount?.currentBalanceCents),
         targetAmount: mainGoal ? toAmount(mainGoal.targetAmountCents) : 0,
-        monthlyDelta: allocation.ahorro,
+        monthlyDelta: savingsAllocation,
         history: [
           3500,
           4200,
@@ -605,11 +612,11 @@ function emptySnapshot(): FinanceSnapshot {
   return {
     user: { name: "Iván", initials: "IV" },
     income: { amount: 0, periodLabel: "Sin datos", receivedAt: "" },
-    allocation: { pagoTarjetas: 0, ahorro: 0, fijos: 0, libre: 0 },
+    allocation: { pagoTarjetas: 0, ahorro: 0, fijos: 0, libre: 0, items: [] },
     dashboard: { libre: 0, committed: 0, alerts: [] },
     goals: {
       ahorro: {
-        name: "Meta de ahorro",
+        name: "Meta",
         currentAmount: 0,
         targetAmount: 48000,
         monthlyDelta: 0,
@@ -633,4 +640,8 @@ function emptySnapshot(): FinanceSnapshot {
       budgets: [],
     },
   };
+}
+
+function hashText(value: string) {
+  return value.split("").reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
 }

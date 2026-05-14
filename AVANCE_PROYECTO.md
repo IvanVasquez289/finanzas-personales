@@ -26,7 +26,7 @@ Estado importante:
 - [x] Ya se aplicó una migración de seguridad para activar RLS y revocar acceso por Data API.
 - [x] Prisma Client ya puede consultar la base con `@prisma/adapter-pg`.
 - [x] La pantalla principal ya lee datos reales desde Supabase vía Prisma.
-- [x] Ya existe seed idempotente para datos iniciales reales.
+- [x] La app ya no siembra datos automáticamente; cada usuario configura sus datos desde cero.
 - [x] Ya existe una primera server action conectada a Prisma para crear gastos manuales.
 - [x] Ya existe autenticación simple con Better Auth en código.
 
@@ -39,7 +39,7 @@ Estado importante:
 - [x] Crear componentes base compatibles con shadcn/ui.
 - [x] Configurar Prisma ORM con PostgreSQL/Supabase.
 - [x] Definir el modelo de datos inicial en `prisma/schema.prisma`.
-- [x] Crear seed idempotente con datos iniciales reales.
+- [x] Eliminar seed automático y permitir onboarding/configuración manual desde cero.
 - [x] Aplicar migración inicial en Supabase.
 - [x] Activar RLS y revocar acceso Data API para tablas de dominio.
 - [x] Endurecer acceso a `_prisma_migrations`.
@@ -402,7 +402,7 @@ Pantallas definidas en `proyect.md` pero no implementadas visualmente:
 - `features/transactions/expense-form-screen.tsx`: pantalla de registro de gasto.
 - `lib/finance-snapshot.ts`: consulta server-side que arma el estado de UI desde Prisma.
 - `lib/db.ts`: Prisma Client con `@prisma/adapter-pg`.
-- `prisma/seed.cjs`: seed idempotente de datos iniciales reales.
+- La app ya no siembra datos automáticamente; una cuenta nueva arranca vacía y se configura desde onboarding.
 
 ### PWA
 
@@ -448,16 +448,17 @@ Crear:
 - Configuración compatible con Next.js y Prisma 7.
 - Prueba mínima de conexión.
 
-### 6.2 Seed inicial
+### 6.2 Configuración manual inicial
 
-Crear seed para:
+Estado: implementado sin seed.
 
-- Usuario personal inicial.
-- Categorías iniciales: Transporte, Comida/salidas, Tools/subs, MSI, Libre, Fijos, Ahorro, Otros.
-- Sobres: Ahorro, Pago tarjetas, Fijos, Libre.
-- Cuentas: BBVA Débito, Nu Débito.
-- Tarjetas: BBVA Azul, Liverpool.
-- Meta de ahorro inicial.
+Cada usuario nuevo arranca sin cuentas, categorías, tarjetas, presupuestos ni metas. La configuración se hace desde la app:
+
+- Crear cuentas y sobres propios.
+- Crear categorías propias.
+- Crear tarjetas propias.
+- Crear meta y presupuestos propios.
+- Registrar ingreso y distribuirlo entre las cuentas/sobres configurados por el usuario.
 
 ### 6.3 Servicios de dominio
 
@@ -595,7 +596,6 @@ Estos comandos ya pasan en el estado actual:
 npm run build
 npx prisma validate
 npm run prisma:generate
-npm run prisma:seed
 ```
 
 Migración inicial ya ejecutada:

@@ -4,7 +4,6 @@ import { Landmark, Plus } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EnvelopeCard } from "@/components/accounts/envelope-card";
 import { EnvelopeDonut } from "@/components/accounts/envelope-donut";
-import { Legend } from "@/components/accounts/legend";
 import { BigNum } from "@/components/finance/big-num";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Button } from "@/components/ui/button";
@@ -23,12 +22,15 @@ export function EnvelopesScreen({
   onReorder: () => void;
 }) {
   const total = data.envelopes.reduce((a, s) => a + s.balance, 0) + data.bankAccounts.reduce((a, c) => a + c.balance, 0);
-  const savingsTotal = data.envelopes.find((envelope) => envelope.name === "Ahorro")?.balance ?? 0;
-  const committedTotal = data.envelopes
-    .filter((envelope) => envelope.name === "Pago tarjetas" || envelope.name === "Fijos")
-    .reduce((sum, envelope) => sum + envelope.balance, 0);
-  const libreTotal = data.envelopes.find((envelope) => envelope.name === "Libre")?.balance ?? 0;
   const bankTotal = data.bankAccounts.reduce((sum, account) => sum + account.balance, 0);
+  const legendItems = [
+    ...data.envelopes.slice(0, 3).map((envelope) => ({
+      color: envelope.color,
+      label: envelope.name,
+      value: envelope.balance,
+    })),
+    ...(data.bankAccounts.length > 0 ? [{ color: FT.textDim, label: "Cuentas", value: bankTotal }] : []),
+  ];
 
   return (
     <>
@@ -47,10 +49,19 @@ export function EnvelopesScreen({
                 <BigNum value={total} size={28} />
               </div>
               <div className="mt-2 flex flex-col gap-1">
-                <Legend color={FT.pos} label="Intocable" value={savingsTotal} />
-                <Legend color={FT.accent} label="Comprometido" value={committedTotal} />
-                <Legend color={FT.warn} label="Libre" value={libreTotal} />
-                <Legend color={FT.textDim} label="Cuentas" value={bankTotal} />
+                {legendItems.length > 0 ? (
+                  legendItems.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="min-w-0 truncate text-[#6a7384]">
+                        <span className="mr-1.5 inline-block size-2 rounded-full" style={{ background: item.color }} />
+                        {item.label}
+                      </span>
+                      <span className="font-mono text-[#a4adbe]">{money(item.value)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-[12px] text-[#6a7384]">Sin cuentas configuradas.</div>
+                )}
               </div>
             </div>
           </div>
@@ -84,9 +95,9 @@ export function EnvelopesScreen({
           <div className="flex items-start gap-2.5">
             <div className="grid size-7 shrink-0 place-items-center rounded-full bg-[#F5B54424] text-[13px] font-semibold text-[#F5B544]">!</div>
             <div>
-              <div className="text-[13px] font-medium">Si Libre se acaba, no se repone con tarjeta.</div>
+              <div className="text-[13px] font-medium">Define tus propios sobres antes de gastar.</div>
               <p className="mt-1 text-[12px] leading-[1.45] text-[#a4adbe]">
-                Antojos, Bama, Amazon y compras random salen de Libre. El sistema te avisa antes de tocar Ahorro.
+                La app ya no crea sobres por defecto. Tus saldos y reportes salen de las cuentas que configures aquí.
               </p>
             </div>
           </div>

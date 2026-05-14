@@ -85,7 +85,16 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
       {screen === "calendar" ? <PaymentCalendarScreen data={snapshot} onBack={() => setScreen("home")} /> : null}
       {screen === "reports" ? <ReportsScreen data={snapshot} onBack={() => setScreen("home")} /> : null}
       {screen === "imports" ? <ImportWorkbenchScreen data={snapshot} onBack={() => setScreen("home")} /> : null}
-      {screen === "onboarding" ? <OnboardingScreen data={snapshot} onBack={() => setScreen("home")} /> : null}
+      {screen === "onboarding" ? (
+        <OnboardingScreen
+          data={snapshot}
+          onBack={() => setScreen("home")}
+          onAccounts={() => setScreen("settings-accounts")}
+          onCards={() => setScreen("settings-cards")}
+          onPlan={() => setScreen("settings-plan")}
+          onIncome={() => setScreen("goal")}
+        />
+      ) : null}
       {screen === "reorder-envelopes" ? <ReorderEnvelopesScreen data={snapshot} onBack={() => setScreen("env")} /> : null}
     </AppShell>
   );
