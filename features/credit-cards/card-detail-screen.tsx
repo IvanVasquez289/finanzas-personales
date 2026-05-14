@@ -64,6 +64,7 @@ export function CardDetailScreen({
   );
   const paymentSources = data.expenseForm.accounts.filter((account) => account.paymentMethod !== "credit_card");
   const [paymentAmount, setPaymentAmount] = useState(card.due);
+  const cardGradient = `linear-gradient(135deg, ${shade(card.dot, -34)} 0%, ${card.dot} 56%, ${shade(card.dot, 28)} 100%)`;
 
   useEffect(() => {
     if (!paymentState.ok) return;
@@ -114,7 +115,7 @@ export function CardDetailScreen({
           ))}
         </div>
       ) : null}
-      <div className="relative h-[196px] overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#1E3DB0_0%,#2A5BFF_55%,#5C84FF_100%)] p-5 text-white shadow-[0_12px_40px_rgba(42,91,255,0.32)]">
+      <div className="relative h-[196px] overflow-hidden rounded-[20px] p-5 text-white shadow-[0_12px_40px_rgba(42,91,255,0.32)]" style={{ background: cardGradient }}>
         <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_100%_0%,rgba(255,255,255,0.25)_0%,transparent_60%)]" />
         <div className="relative flex h-full flex-col justify-between">
           <div className="flex items-start justify-between">
@@ -265,6 +266,16 @@ export function CardDetailScreen({
       </div>
     </div>
   );
+}
+
+function shade(hex: string, amount: number) {
+  const normalized = hex.replace("#", "");
+  const num = Number.parseInt(normalized, 16);
+  const clamp = (value: number) => Math.max(0, Math.min(255, value));
+  const r = clamp((num >> 16) + amount);
+  const g = clamp(((num >> 8) & 255) + amount);
+  const b = clamp((num & 255) + amount);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 function MsiRow({ merchant, monthly, sub, current, total, last }: { merchant: string; monthly: number; sub: string; current: number; total: number; last?: boolean }) {

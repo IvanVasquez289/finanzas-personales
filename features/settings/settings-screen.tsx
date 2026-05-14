@@ -32,6 +32,8 @@ import {
 import { initialSettingsState } from "./types";
 import { signOut } from "@/lib/auth-client";
 
+const cardColorPresets = ["#2A5BFF", "#3DD68C", "#F5B544", "#8B6CF0", "#3DD6C9", "#E94B6A"];
+
 export function SettingsScreen({
   data,
   section,
@@ -352,6 +354,7 @@ export function SettingsScreen({
                     <Input name="name" placeholder="Nombre (ej. BBVA Azul)" autoFocus />
                     <Input name="issuer" placeholder="Emisor (ej. BBVA)" />
                   </div>
+                  <CardColorPicker name="color" defaultValue="#2A5BFF" />
                   <div className="grid grid-cols-2 gap-2">
                     <select name="type" className={fieldClass}>
                       <option value="credit_card">Crédito</option>
@@ -379,6 +382,7 @@ export function SettingsScreen({
                     onClick={() => setEditingCardId(editingCardId === card.id ? null : card.id)}
                   >
                     <Tags size={16} className="shrink-0 text-[#6a7384]" />
+                    <span className="size-3 rounded-full" style={{ background: card.credit?.color ?? "#2A5BFF" }} />
                     <div className="min-w-0 flex-1 text-left">
                       <div className="text-[14px] font-semibold">{card.name}</div>
                       <div className="mt-0.5 text-[11px] text-[#6a7384]">
@@ -396,6 +400,7 @@ export function SettingsScreen({
                           <Input name="name" defaultValue={card.name} placeholder="Nombre" />
                           <Input name="issuer" defaultValue={card.credit?.issuer} placeholder="Emisor" />
                         </div>
+                        <CardColorPicker name="color" defaultValue={card.credit?.color ?? "#2A5BFF"} />
                         <div className="grid grid-cols-4 gap-2">
                           <Input name="creditLimit" type="number" step="0.01" defaultValue={card.credit?.limit} placeholder="Límite" />
                           <Input name="cutoffDay" type="number" min={1} max={31} defaultValue={card.credit?.cutoffDay} placeholder="Corte" />
@@ -617,6 +622,48 @@ function StateMessage({ state }: { state: { ok: boolean; message: string } }) {
       {state.message}
     </div>
   );
+}
+
+function CardColorPicker({ name, defaultValue }: { name: string; defaultValue: string }) {
+  const [value, setValue] = useState(defaultValue);
+
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-[#10141d] p-2.5">
+      <input type="hidden" name={name} value={value} />
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Color de tarjeta</span>
+        <span
+          className="h-5 w-12 rounded-full"
+          style={{ background: `linear-gradient(135deg, ${shade(value, -34)} 0%, ${value} 56%, ${shade(value, 28)} 100%)` }}
+        />
+      </div>
+      <div className="grid grid-cols-6 gap-2">
+        {cardColorPresets.map((color) => (
+          <button
+            type="button"
+            key={color}
+            aria-label={`Color ${color}`}
+            onClick={() => setValue(color)}
+            className="h-8 rounded-xl border"
+            style={{
+              background: `linear-gradient(135deg, ${shade(color, -34)} 0%, ${color} 56%, ${shade(color, 28)} 100%)`,
+              borderColor: value === color ? "rgba(238,242,248,0.9)" : "rgba(255,255,255,0.10)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function shade(hex: string, amount: number) {
+  const normalized = hex.replace("#", "");
+  const num = Number.parseInt(normalized, 16);
+  const clamp = (value: number) => Math.max(0, Math.min(255, value));
+  const r = clamp((num >> 16) + amount);
+  const g = clamp(((num >> 8) & 255) + amount);
+  const b = clamp((num & 255) + amount);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {

@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useMemo, useState } from "react";
-import { ArrowUp, BarChart3, CalendarDays, LogOut, ScanText, SlidersHorizontal } from "lucide-react";
+import { ArrowUp, BarChart3, CalendarDays, LogOut, ScanText, Settings2 } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { MiniCard } from "@/components/cards/mini-card";
 import { PaymentRow } from "@/components/dashboard/payment-row";
@@ -154,7 +154,7 @@ export function DashboardScreen({
           <QuickAction icon={CalendarDays} label="Calendario" onClick={onViewCalendar} />
           <QuickAction icon={BarChart3} label="Reportes" onClick={onViewReports} />
           <QuickAction icon={ScanText} label="Importar" onClick={onViewImports} />
-          <QuickAction icon={SlidersHorizontal} label="Setup" onClick={onViewOnboarding} />
+          <QuickAction icon={Settings2} label="Ajustes" onClick={onViewOnboarding} />
         </div>
 
         {needsSetup ? (

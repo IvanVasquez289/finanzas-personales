@@ -132,6 +132,7 @@ export type FinanceSnapshot = {
       sortOrder: number;
       credit?: {
         issuer: string;
+        color: string;
         limit: number;
         cutoffDay: number;
         paymentDueDay: number;
@@ -223,7 +224,7 @@ function envelopeMeta(name: string) {
   return { color, note: "Cuenta activa" };
 }
 
-function cardColor(name: string) {
+function defaultCardColor(name: string) {
   if (name.toLowerCase().includes("liverpool")) return "#E94B6A";
   return "#2A5BFF";
 }
@@ -333,7 +334,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       orderBy: { createdAt: "asc" },
     }),
   ]);
-  const latestIncome = incomeEvents[0] ?? null;
+  const currentIncomeEvent = incomeEvents[0] ?? null;
   const previousIncomeEvent = incomeEvents[1] ?? null;
 
   const balances = deriveAccountBalances({
@@ -351,7 +352,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     items: [] as FinanceSnapshot["allocation"]["items"],
   };
 
-  for (const item of latestIncome?.allocations ?? []) {
+  for (const item of currentIncomeEvent?.allocations ?? []) {
     allocation.items.push({
       accountId: item.accountId,
       name: item.account.name,
@@ -362,7 +363,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
 
   const mainGoal = goals[0];
   const savingAccount = accounts.find((account) => account.type === "savings");
-  const savingsAllocation = latestIncome?.allocations
+  const savingsAllocation = currentIncomeEvent?.allocations
     .filter((item) => item.account.type === "savings")
     .reduce((sum, item) => sum + toAmount(item.amountCents), 0) ?? 0;
 
@@ -424,7 +425,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       issuer: credit.account.name,
       accountId: credit.accountId,
       cycleId: cycle?.id,
-      dot: cardColor(credit.account.name),
+      dot: credit.color ?? defaultCardColor(credit.account.name),
       daysToClose: cycle ? daysUntil(cycle.endDate) : 0,
       cycleStartDate: cycle?.startDate.toISOString().slice(0, 10),
       used,
@@ -489,9 +490,9 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       initials: initials(user.name),
     },
     income: {
-      amount: toAmount(latestIncome?.amountCents),
-      periodLabel: latestIncome ? `Quincena · ${formatShortDate(latestIncome.receivedAt)}` : "Sin ingreso registrado",
-      receivedAt: latestIncome?.receivedAt.toISOString() ?? "",
+      amount: toAmount(currentIncomeEvent?.amountCents),
+      periodLabel: currentIncomeEvent ? `Quincena · ${formatShortDate(currentIncomeEvent.receivedAt)}` : "Sin ingreso registrado",
+      receivedAt: currentIncomeEvent?.receivedAt.toISOString() ?? "",
     },
     previousIncome: previousIncomeEvent
       ? {
@@ -587,6 +588,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         credit: account.creditAccount
           ? {
               issuer: account.creditAccount.issuer,
+              color: account.creditAccount.color ?? defaultCardColor(account.name),
               limit: toAmount(account.creditAccount.creditLimitCents),
               cutoffDay: account.creditAccount.cutoffDay,
               paymentDueDay: account.creditAccount.paymentDueDay,

@@ -41,7 +41,7 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
                       : screen;
 
   return (
-    <AppShell active={activeTab} onNavigate={setScreen}>
+    <AppShell active={activeTab} onNavigate={setScreen} hideNavigation={screen === "add"}>
       {screen === "home" ? (
         <DashboardScreen
           data={snapshot}

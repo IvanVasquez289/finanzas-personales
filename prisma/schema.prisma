@@ -189,6 +189,7 @@ model CreditAccount {
   id                  String            @id @default(cuid())
   accountId           String            @unique
   issuer              String
+  color               String            @default("#2A5BFF")
   creditLimitCents    Int?
   cutoffDay           Int
   paymentDueDay       Int

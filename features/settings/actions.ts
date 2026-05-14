@@ -9,6 +9,7 @@ import type { SettingsActionState } from "./types";
 const emptyState: SettingsActionState = { ok: false, message: "" };
 
 const moneySchema = z.coerce.number().min(0);
+const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#2A5BFF");
 
 export async function createAccountAction(
   _state: SettingsActionState,
@@ -217,6 +218,7 @@ export async function createCreditCardAction(
   const parsed = z.object({
     name: z.string().trim().min(1),
     issuer: z.string().trim().min(1),
+    color: colorSchema,
     type: z.enum(["credit_card", "store_card"]),
     creditLimit: moneySchema,
     cutoffDay: z.coerce.number().int().min(1).max(31),
@@ -225,6 +227,7 @@ export async function createCreditCardAction(
   }).safeParse({
     name: formData.get("name"),
     issuer: formData.get("issuer"),
+    color: formData.get("color") || "#2A5BFF",
     type: formData.get("type"),
     creditLimit: formData.get("creditLimit") || 0,
     cutoffDay: formData.get("cutoffDay"),
@@ -245,6 +248,7 @@ export async function createCreditCardAction(
       creditAccount: {
         create: {
           issuer: parsed.data.issuer,
+          color: parsed.data.color,
           creditLimitCents: toCents(parsed.data.creditLimit),
           cutoffDay: parsed.data.cutoffDay,
           paymentDueDay: parsed.data.paymentDueDay,
@@ -266,6 +270,7 @@ export async function updateCreditCardAction(
     accountId: z.string().min(1),
     name: z.string().trim().min(1),
     issuer: z.string().trim().min(1),
+    color: colorSchema,
     creditLimit: moneySchema,
     cutoffDay: z.coerce.number().int().min(1).max(31),
     paymentDueDay: z.coerce.number().int().min(1).max(31),
@@ -274,6 +279,7 @@ export async function updateCreditCardAction(
     accountId: formData.get("accountId"),
     name: formData.get("name"),
     issuer: formData.get("issuer"),
+    color: formData.get("color") || "#2A5BFF",
     creditLimit: formData.get("creditLimit") || 0,
     cutoffDay: formData.get("cutoffDay"),
     paymentDueDay: formData.get("paymentDueDay"),
@@ -291,6 +297,7 @@ export async function updateCreditCardAction(
       creditAccount: {
         update: {
           issuer: parsed.data.issuer,
+          color: parsed.data.color,
           creditLimitCents: toCents(parsed.data.creditLimit),
           cutoffDay: parsed.data.cutoffDay,
           paymentDueDay: parsed.data.paymentDueDay,

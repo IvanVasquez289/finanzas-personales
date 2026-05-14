@@ -4,7 +4,7 @@ import type React from "react";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Banknote, CreditCard, ReceiptText, Search, Wallet } from "lucide-react";
+import { Banknote, CreditCard, Delete, ReceiptText, Search, Wallet } from "lucide-react";
 import { Dot } from "@/components/finance/dot";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Tag } from "@/components/finance/tag";
@@ -90,29 +90,29 @@ export function ExpenseFormScreen({
   }, [cat, form, merchantSuggestion]);
 
   return (
-    <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
+    <form action={formAction} className="flex flex-1 flex-col overflow-hidden bg-[#06080c] app-top">
       <input type="hidden" name="amount" value={amount} readOnly />
       <input type="hidden" name="categoryId" value={cat} readOnly />
       <input type="hidden" name="accountId" value={method} readOnly />
       <input type="hidden" name="isInstallment" value={isInstallment ? "true" : "false"} readOnly />
-      <div className="flex items-center justify-between px-4 pb-3">
+      <div className="flex items-center justify-between px-4 pb-2">
         <button type="button" className="text-[14px] text-[#a4adbe]" onClick={onCancel}>Cancelar</button>
         <div className="text-[15px] font-semibold">Nuevo gasto</div>
         <button className="text-[14px] font-semibold text-[#2A5BFF] disabled:text-[#6a7384]" disabled={pending || !cat || !method}>
           {pending ? "Guardando" : "Guardar"}
         </button>
       </div>
-      <div className="px-5 pb-2 pt-6 text-center">
-        <div className="mb-2 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Monto</div>
+      <div className="z-10 border-b border-white/[0.06] bg-[#06080c] px-5 pb-3 pt-2 text-center">
+        <div className="mb-1 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Monto</div>
         <div className="inline-flex items-baseline justify-center font-mono tabular-nums">
-          <span className="mr-1 text-[28px] text-[#6a7384]">−$</span>
-          <span className="text-[64px] font-semibold leading-none">{amount.split(".")[0]}</span>
-          <span className="text-[32px] font-semibold text-[#a4adbe]">.{amount.split(".")[1] || "00"}</span>
-          <span className="ml-1 inline-block h-9 w-0.5 animate-[blink_1s_steps(2)_infinite] bg-[#2A5BFF]" />
+          <span className="mr-1 text-[24px] text-[#6a7384]">−$</span>
+          <span className="text-[52px] font-semibold leading-none">{amount.split(".")[0]}</span>
+          <span className="text-[28px] font-semibold text-[#a4adbe]">.{amount.split(".")[1] || "00"}</span>
+          <span className="ml-1 inline-block h-8 w-0.5 animate-[blink_1s_steps(2)_infinite] bg-[#2A5BFF]" />
         </div>
-        <div className="mt-2 text-[12px] text-[#6a7384]">Hoy · {merchant || "Sin comercio"}</div>
+        <div className="mt-1.5 text-[12px] text-[#6a7384]">Hoy · {merchant || "Sin comercio"}</div>
       </div>
-      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-4">
+      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[222px] pt-3">
         <div className="mt-2">
           <SectionHeader title="Comercio" />
           <label className="flex h-12 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[#a4adbe] focus-within:border-[#2A5BFF]/60">
@@ -161,16 +161,16 @@ export function ExpenseFormScreen({
             </div>
           )}
         </div>
-        <div className="mt-[18px]">
+        <div className="mt-4">
           <SectionHeader title="Método de pago" />
-          <div className="mb-2 grid grid-cols-4 gap-2">
+          <div className="mb-2 grid grid-cols-4 gap-1.5">
             <MethodButton icon={Wallet} label="Todos" active={methodType === "all"} onClick={() => setMethodType("all")} />
             <MethodButton icon={CreditCard} label="Crédito" active={methodType === "credit_card"} onClick={() => setMethodType("credit_card")} />
             <MethodButton icon={Banknote} label="Débito" active={methodType === "debit"} onClick={() => setMethodType("debit")} />
             <MethodButton icon={ReceiptText} label="Cash" active={methodType === "cash"} onClick={() => setMethodType("cash")} />
           </div>
           <SectionHeader title="Cargar a" />
-          <Card className="overflow-hidden">
+          <Card className="max-h-[146px] overflow-auto">
             {filteredMethods.map((m, index) => (
               <button type="button" key={m.id} onClick={() => form.setValue("accountId", m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === filteredMethods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <span className="grid size-[22px] shrink-0 place-items-center rounded-full border" style={{ borderColor: method === m.id ? FT.accent : "rgba(255,255,255,0.10)" }}>
@@ -192,7 +192,7 @@ export function ExpenseFormScreen({
             ) : null}
           </Card>
         </div>
-        <Card className="mt-3.5 p-3.5">
+        <Card className="mt-3 p-3.5">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[14px] font-medium">¿Meses sin intereses?</div>
@@ -222,7 +222,7 @@ export function ExpenseFormScreen({
             </div>
           ) : null}
         </Card>
-        <Card className="mt-3.5 p-3.5">
+        <Card className="mt-3 p-3.5">
           <div className="grid grid-cols-2 gap-3">
             <label className="text-[12px] text-[#6a7384]">
               Fecha
@@ -242,7 +242,7 @@ export function ExpenseFormScreen({
             </label>
           </div>
         </Card>
-        <Card className="mt-3.5 p-3.5">
+        <Card className="mt-3 p-3.5">
           <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Nota</div>
           <input
             {...form.register("note")}
@@ -281,7 +281,7 @@ function MethodButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[52px] flex-col items-center justify-center gap-1 rounded-2xl border text-[10px] font-medium"
+      className="flex h-[48px] flex-col items-center justify-center gap-1 rounded-2xl border text-[10px] font-medium"
       style={{
         background: active ? FT.accentSoft : "rgba(255,255,255,0.04)",
         borderColor: active ? "rgba(42,91,255,0.45)" : "rgba(255,255,255,0.08)",
@@ -325,13 +325,13 @@ function Keypad({ value, setValue }: { value: string; setValue: (value: string) 
   };
 
   return (
-    <div className="border-t border-white/[0.06] bg-gradient-to-t from-[#0b0e14] to-[#0b0e14d9] px-3 app-bottom-fixed pt-2">
+    <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] border-t border-white/[0.06] bg-[#090c13]/96 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 shadow-[0_-18px_38px_rgba(0,0,0,0.48)] backdrop-blur-xl md:absolute">
       <div className="flex flex-col gap-1.5">
         {keys.map((row) => (
           <div key={row.join("")} className="flex gap-1.5">
             {row.map((key) => (
-              <button type="button" key={key} onClick={() => press(key)} className="flex h-[46px] flex-1 items-center justify-center rounded-xl border border-white/[0.06] bg-[#161b25] font-mono text-[22px] font-medium">
-                {key === "del" ? <ReceiptText size={20} className="text-[#a4adbe]" /> : key}
+              <button type="button" key={key} onClick={() => press(key)} className="flex h-[42px] flex-1 items-center justify-center rounded-xl border border-white/[0.06] bg-[#161b25] font-mono text-[21px] font-medium active:bg-[#202737]">
+                {key === "del" ? <Delete size={20} className="text-[#a4adbe]" /> : key}
               </button>
             ))}
           </div>
