@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { money } from "@/lib/money";
-import { initialSettingsState, reorderAccountAction } from "@/features/settings/actions";
+import { reorderAccountAction } from "@/features/settings/actions";
+import { initialSettingsState } from "@/features/settings/types";
 
 export function ReorderEnvelopesScreen({ data, onBack }: { data: FinanceSnapshot; onBack: () => void }) {
   const [state, action, pending] = useActionState(reorderAccountAction, initialSettingsState);

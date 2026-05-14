@@ -4,17 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentFinanceUser } from "@/lib/current-user";
 import { prisma } from "@/lib/db";
-
-export type SettingsActionState = {
-  ok: boolean;
-  message: string;
-};
+import type { SettingsActionState } from "./types";
 
 const emptyState: SettingsActionState = { ok: false, message: "" };
 
 const moneySchema = z.coerce.number().min(0);
-
-export const initialSettingsState = emptyState;
 
 export async function createAccountAction(
   _state: SettingsActionState,

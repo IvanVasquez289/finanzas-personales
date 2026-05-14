@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { ArrowLeft, Check, FileText, ImageUp, ListChecks, ScanText, X } from "lucide-react";
+import { useActionState, useRef, useState, useTransition } from "react";
+import { ArrowLeft, Camera, Check, FileText, ImageUp, ListChecks, Loader2, ScanText, X } from "lucide-react";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,13 +16,12 @@ import {
   type ImportActionState,
 } from "./actions";
 
-type ImportTab = "capture" | "review" | "pdf" | "analysis" | "rules";
+type ImportTab = "capture" | "review" | "pdf" | "rules";
 
 const tabs: { id: ImportTab; label: string }[] = [
   { id: "capture", label: "Captura" },
-  { id: "review", label: "OCR" },
+  { id: "review", label: "Revisar" },
   { id: "pdf", label: "PDF" },
-  { id: "analysis", label: "Análisis" },
   { id: "rules", label: "Reglas" },
 ];
 
@@ -44,7 +43,7 @@ export function ImportWorkbenchScreen({ data, onBack }: { data: FinanceSnapshot;
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-4 gap-1.5">
         {tabs.map((item) => (
           <button
             key={item.id}
@@ -82,14 +81,14 @@ export function ImportWorkbenchScreen({ data, onBack }: { data: FinanceSnapshot;
         />
       )}
 
-      {tab === "analysis" && <AnalysisPanel />}
-
       {tab === "rules" && <RulesPanel data={data} />}
     </div>
   );
 }
 
 // ─── CapturePanel ─────────────────────────────────────────────────────────────
+
+type OcrStatus = "idle" | "loading" | "done" | "error";
 
 function CapturePanel({
   data,
@@ -109,24 +108,112 @@ function CapturePanel({
     INITIAL_STATE,
   );
 
+  const [ocrStatus, setOcrStatus] = useState<OcrStatus>("idle");
+  const [ocrText, setOcrText] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const allAccounts = data.expenseForm.accounts.map((a) => ({ id: a.id, name: a.label }));
 
-  const icon = source === "screenshot" ? <ImageUp size={18} /> : <FileText size={18} />;
-  const title = source === "screenshot" ? "Importación por captura" : "Importación por PDF";
-  const body =
-    source === "screenshot"
-      ? "Pega el texto copiado de tu app bancaria. Se detectarán fechas, comercios y montos automáticamente."
-      : "Pega el texto extraído de tu estado de cuenta PDF para comparar movimientos contra los ya registrados.";
+  const isScreenshot = source === "screenshot";
+  const title = isScreenshot ? "Importar por captura" : "Importar por PDF";
+  const body = isScreenshot
+    ? "Sube una captura de tu app bancaria o pega el texto directamente. Se detectarán fechas, comercios y montos."
+    : "Pega el texto extraído de tu estado de cuenta PDF para detectar y comparar movimientos.";
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setOcrStatus("loading");
+    setOcrText("");
+
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker(["spa", "eng"]);
+      const result = await worker.recognize(file);
+      await worker.terminate();
+
+      const extracted = result.data.text.trim();
+      setOcrText(extracted);
+      setOcrStatus("done");
+
+      if (textareaRef.current) {
+        textareaRef.current.value = extracted;
+        textareaRef.current.focus();
+      }
+    } catch {
+      setOcrStatus("error");
+    }
+  }
 
   return (
     <Card className="p-4">
       <div className="mb-4 flex items-start gap-3">
-        <div className="grid size-9 place-items-center rounded-2xl bg-[#2A5BFF1f] text-[#2A5BFF]">{icon}</div>
+        <div className="grid size-9 shrink-0 place-items-center rounded-2xl bg-[#2A5BFF1f] text-[#2A5BFF]">
+          {isScreenshot ? <ImageUp size={18} /> : <FileText size={18} />}
+        </div>
         <div>
           <div className="text-[15px] font-semibold">{title}</div>
           <p className="mt-1 text-[12px] leading-[1.45] text-[#a4adbe]">{body}</p>
         </div>
       </div>
+
+      {/* Image OCR section (screenshot only) */}
+      {isScreenshot && (
+        <div className="mb-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleImageSelect}
+          />
+
+          {previewUrl ? (
+            <div className="relative mb-3 overflow-hidden rounded-2xl border border-white/[0.08]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewUrl} alt="Captura seleccionada" className="max-h-48 w-full object-contain" />
+              <button
+                type="button"
+                onClick={() => { setPreviewUrl(null); setOcrStatus("idle"); setOcrText(""); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-black/50 text-white"
+              >
+                <X size={12} />
+              </button>
+              {ocrStatus === "loading" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+                  <Loader2 size={24} className="animate-spin text-white" />
+                  <span className="text-[12px] text-white">Extrayendo texto…</span>
+                </div>
+              )}
+              {ocrStatus === "done" && (
+                <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-[#3DD68C]/90 px-2 py-1 text-[11px] font-medium text-black">
+                  <Check size={11} />
+                  Texto extraído
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-[13px] text-[#6a7384] transition-colors hover:border-[#2A5BFF]/40 hover:text-[#a4adbe]"
+            >
+              <Camera size={17} />
+              Subir captura o foto
+            </button>
+          )}
+
+          {ocrStatus === "error" && (
+            <p className="mb-2 text-[12px] text-red-400">No se pudo leer la imagen. Pega el texto manualmente.</p>
+          )}
+        </div>
+      )}
 
       <form action={action} className="grid gap-3">
         <input type="hidden" name="source" value={source} />
@@ -142,13 +229,23 @@ function CapturePanel({
           ))}
         </select>
 
-        <textarea
-          name="rawText"
-          required
-          rows={6}
-          placeholder={"Pega aquí el texto del movimiento:\n05/05/2026  OXXO CONVENIENCE  $89.50\n06/05/2026  UBER TRIP  $128.40"}
-          className="w-full resize-none rounded-2xl border border-white/[0.08] bg-[#10141d] p-3 text-[13px] text-white placeholder:text-[#6a7384]"
-        />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            name="rawText"
+            required
+            rows={6}
+            defaultValue={ocrText}
+            key={ocrText}
+            placeholder={"Texto de los movimientos:\n05/05/2026  OXXO CONVENIENCE  $89.50\n06/05/2026  UBER TRIP  $128.40"}
+            className="w-full resize-none rounded-2xl border border-white/[0.08] bg-[#10141d] p-3 text-[13px] text-white placeholder:text-[#6a7384]"
+          />
+          {ocrStatus === "loading" && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#10141d]/80">
+              <Loader2 size={20} className="animate-spin text-[#a4adbe]" />
+            </div>
+          )}
+        </div>
 
         {state.message && (
           <p className={`text-[12px] ${state.ok ? "text-green-400" : "text-red-400"}`}>
@@ -156,7 +253,7 @@ function CapturePanel({
           </p>
         )}
 
-        <Button type="submit" disabled={pending} className="w-full">
+        <Button type="submit" disabled={pending || ocrStatus === "loading"} className="w-full">
           {pending ? "Procesando…" : "Preparar revisión"}
         </Button>
       </form>
@@ -175,7 +272,6 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
     INITIAL_STATE,
   );
 
-  // Load items when batchId arrives
   if (batchId && !loaded && !isPending) {
     startTransition(async () => {
       const batches = await getImportBatchesAction();
@@ -212,9 +308,9 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
   if (!batchId) {
     return (
       <Card className="p-4">
-        <SectionHeader title="Revisión de OCR" />
+        <SectionHeader title="Revisión" />
         <p className="text-[13px] text-[#6a7384]">
-          Crea un lote desde la pestaña Captura o PDF para revisar los movimientos detectados.
+          Importa una captura o PDF para revisar los movimientos detectados aquí.
         </p>
       </Card>
     );
@@ -222,7 +318,8 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
 
   if (!loaded) {
     return (
-      <Card className="p-4">
+      <Card className="flex items-center justify-center gap-2 p-6">
+        <Loader2 size={16} className="animate-spin text-[#a4adbe]" />
         <p className="text-[13px] text-[#a4adbe]">Cargando movimientos…</p>
       </Card>
     );
@@ -232,11 +329,20 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
   const confirmedCount = items.filter((i) => i.status === "confirmed").length;
 
   return (
-    <Card className="p-4">
-      <SectionHeader title="Revisión de OCR" />
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between">
+        <div className="text-[13px] text-[#a4adbe]">
+          {visibleItems.length} movimiento{visibleItems.length !== 1 ? "s" : ""} detectado{visibleItems.length !== 1 ? "s" : ""}
+        </div>
+        {confirmedCount > 0 && (
+          <div className="text-[12px] font-semibold text-[#3DD68C]">{confirmedCount} seleccionado{confirmedCount !== 1 ? "s" : ""}</div>
+        )}
+      </div>
 
       {visibleItems.length === 0 ? (
-        <p className="text-[13px] text-[#6a7384]">No se detectaron movimientos en este lote.</p>
+        <Card className="p-4">
+          <p className="text-center text-[13px] text-[#6a7384]">No se detectaron movimientos en este lote.</p>
+        </Card>
       ) : (
         <div className="grid gap-2">
           {visibleItems.map((item) => (
@@ -256,7 +362,7 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
       )}
 
       {confirmedCount > 0 && (
-        <form action={confirmAction} className="mt-3 grid gap-2">
+        <form action={confirmAction} className="grid gap-2">
           <input type="hidden" name="batchId" value={batchId} />
           <input type="hidden" name="accountId" value={data.expenseForm.accounts[0]?.id ?? ""} />
           {confirmState.message && (
@@ -269,7 +375,7 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
           </Button>
         </form>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -308,14 +414,14 @@ function ReviewItemRow({
       }}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-semibold truncate">{item.merchant || "Sin comercio"}</div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[14px] font-semibold">{item.merchant || "Sin comercio"}</div>
           <div className="mt-0.5 text-[11px] text-[#6a7384]">{item.date || "Sin fecha"}</div>
         </div>
-        <div className="font-mono text-[13px] shrink-0">
+        <div className="shrink-0 font-mono text-[13px]">
           {item.amountCents > 0 ? money(item.amountCents / 100) : "—"}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={onToggle}
@@ -361,34 +467,6 @@ function ReviewItemRow({
   );
 }
 
-// ─── AnalysisPanel ────────────────────────────────────────────────────────────
-
-function AnalysisPanel() {
-  return (
-    <Card className="p-4">
-      <SectionHeader title="Análisis mensual" />
-      <div className="grid gap-2">
-        {[
-          "Variación contra mes anterior",
-          "Categorías que subieron",
-          "Pagos duplicados o faltantes",
-          "Impacto en ahorro",
-        ].map((item) => (
-          <div
-            key={item}
-            className="rounded-2xl border border-white/[0.08] bg-[#10141d] px-3.5 py-3 text-[13px] text-[#a4adbe]"
-          >
-            {item}
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 text-[12px] text-[#6a7384]">
-        Importa un estado de cuenta PDF para generar el análisis automáticamente.
-      </p>
-    </Card>
-  );
-}
-
 // ─── RulesPanel ───────────────────────────────────────────────────────────────
 
 function RulesPanel({ data }: { data: FinanceSnapshot }) {
@@ -397,32 +475,37 @@ function RulesPanel({ data }: { data: FinanceSnapshot }) {
     categories.find((c) => c.label.toLowerCase().includes(name))?.label ?? categories[0]?.label ?? "Sin categoría";
 
   const rules = [
-    { match: "UBER, DIDI", normalized: "Movilidad", category: find("transporte") },
-    { match: "AMAZON, MERCADO", normalized: "Compras online", category: find("libre") },
-    { match: "OXXO, BAMA", normalized: "Conveniencia", category: find("comida") },
-    { match: "NETFLIX, OPENAI", normalized: "Suscripciones", category: find("tools") },
+    { match: "UBER, DLO*UBER, UBER RIDE", normalized: "Movilidad", category: find("transporte") },
+    { match: "DIDI, DLO DIDI RIDES", normalized: "Movilidad", category: find("transporte") },
+    { match: "RAPPI, UBER EATS, DIDI FOOD", normalized: "Comida delivery", category: find("comida") },
+    { match: "CLAUDE.AI, OPENAI, CODEX", normalized: "Herramientas IA", category: find("tools") },
+    { match: "SPOTIFY, ICLOUD, APPLE", normalized: "Suscripciones", category: find("tools") },
+    { match: "BAMA, OXXO", normalized: "Conveniencia", category: find("libre") },
+    { match: "AMAZON, MERCADO PAGO", normalized: "Compras online", category: find("libre") },
   ];
 
   return (
     <Card className="p-4">
-      <SectionHeader title="Reglas de comercio" />
+      <SectionHeader title="Reglas de categorización" />
+      <p className="mb-3 text-[12px] text-[#6a7384]">
+        Se aplican automáticamente al detectar movimientos en una importación.
+      </p>
       <div className="grid gap-2">
         {rules.map((rule) => (
           <div
             key={rule.match}
-            className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#10141d] px-3.5 py-3"
+            className="rounded-2xl border border-white/[0.08] bg-[#10141d] px-3.5 py-3"
           >
-            <div>
-              <div className="text-[13px] font-semibold">{rule.match}</div>
-              <div className="mt-0.5 text-[11px] text-[#6a7384]">Normalizar como {rule.normalized}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate text-[12px] font-semibold text-[#a4adbe]">{rule.match}</div>
+                <div className="mt-0.5 text-[11px] text-[#6a7384]">→ {rule.normalized}</div>
+              </div>
+              <div className="shrink-0 text-[11px] font-medium text-[#2A5BFF]">{rule.category}</div>
             </div>
-            <div className="text-[12px] text-[#2A5BFF]">{rule.category}</div>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[12px] text-[#6a7384]">
-        Las reglas se aplican automáticamente al importar movimientos nuevos.
-      </p>
     </Card>
   );
 }

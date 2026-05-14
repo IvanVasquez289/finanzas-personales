@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Settings2 } from "lucide-react";
 import { Bars } from "@/components/finance/bars";
 import { BigNum } from "@/components/finance/big-num";
 import { ProgressBar } from "@/components/finance/progress-bar";
@@ -76,9 +76,14 @@ export function CardDetailScreen({
           <ArrowLeft size={16} />
         </Button>
         <div className="text-[14px] text-[#a4adbe]">Tarjeta</div>
-        <Button variant="secondary" size="icon" aria-label="Gestionar tarjetas" onClick={onManage}>
-          <MoreHorizontal size={18} />
-        </Button>
+        <button
+          type="button"
+          onClick={onManage}
+          className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#161b25] px-3 py-2 text-[12px] text-[#a4adbe]"
+        >
+          <Settings2 size={13} />
+          Configurar
+        </button>
       </div>
       {data.creditCards.length > 1 ? (
         <div className="flex gap-2 overflow-x-auto pb-1">
