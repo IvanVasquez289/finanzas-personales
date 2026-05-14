@@ -496,6 +496,75 @@ export async function deleteBudgetAction(
   return { ok: true, message: "Presupuesto eliminado." };
 }
 
+export async function deleteAccountAction(
+  _state: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const parsed = z.object({ id: z.string().min(1) }).safeParse({ id: formData.get("id") });
+  if (!parsed.success) return error("Selecciona una cuenta.");
+  const user = await getCurrentFinanceUser();
+  if (!user) return error("Inicia sesión.");
+
+  const account = await prisma.account.findFirst({
+    where: { id: parsed.data.id, userId: user.id },
+  });
+  if (!account) return error("La cuenta no existe.");
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.installmentPlan.deleteMany({ where: { accountId: parsed.data.id } });
+      await tx.allocation.deleteMany({ where: { accountId: parsed.data.id } });
+      await tx.transaction.deleteMany({ where: { accountId: parsed.data.id, userId: user.id } });
+      await tx.account.delete({ where: { id: parsed.data.id, userId: user.id } });
+    });
+  } catch {
+    return error("No se pudo eliminar la cuenta.");
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "Cuenta eliminada." };
+}
+
+export async function deleteCreditCardAction(
+  _state: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const parsed = z.object({ id: z.string().min(1) }).safeParse({ id: formData.get("id") });
+  if (!parsed.success) return error("Selecciona una tarjeta.");
+  const user = await getCurrentFinanceUser();
+  if (!user) return error("Inicia sesión.");
+
+  const account = await prisma.account.findFirst({
+    where: { id: parsed.data.id, userId: user.id },
+    include: { creditAccount: { include: { cycles: { select: { id: true } } } } },
+  });
+  if (!account || !account.creditAccount) return error("La tarjeta no existe.");
+
+  const cycleIds = account.creditAccount.cycles.map((c) => c.id);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (cycleIds.length > 0) {
+        await tx.transaction.updateMany({
+          where: { creditCardCycleId: { in: cycleIds } },
+          data: { creditCardCycleId: null },
+        });
+        await tx.budget.deleteMany({ where: { creditCardCycleId: { in: cycleIds } } });
+        await tx.creditCardCycle.deleteMany({ where: { id: { in: cycleIds } } });
+      }
+      await tx.installmentPlan.deleteMany({ where: { accountId: parsed.data.id } });
+      await tx.transaction.deleteMany({ where: { accountId: parsed.data.id, userId: user.id } });
+      await tx.creditAccount.delete({ where: { accountId: parsed.data.id } });
+      await tx.account.delete({ where: { id: parsed.data.id, userId: user.id } });
+    });
+  } catch {
+    return error("No se pudo eliminar la tarjeta.");
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "Tarjeta eliminada." };
+}
+
 function toCents(amount: number) {
   return Math.round(amount * 100);
 }

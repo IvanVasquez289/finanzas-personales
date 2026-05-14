@@ -39,7 +39,7 @@ Estado importante:
 - [x] Crear componentes base compatibles con shadcn/ui.
 - [x] Configurar Prisma ORM con PostgreSQL/Supabase.
 - [x] Definir el modelo de datos inicial en `prisma/schema.prisma`.
-- [x] Eliminar seed automático y permitir onboarding/configuración manual desde cero.
+- [x] Eliminar datos automáticos y permitir onboarding/configuración manual desde cero.
 - [x] Aplicar migración inicial en Supabase.
 - [x] Activar RLS y revocar acceso Data API para tablas de dominio.
 - [x] Endurecer acceso a `_prisma_migrations`.
@@ -72,20 +72,22 @@ Estado importante:
 - [x] Agregar reordenamiento persistente de sobres con `sortOrder`.
 - [x] Mejorar registro de gasto con método de pago explícito, comercios frecuentes y reglas de categoría.
 - [x] Maquetar onboarding e importaciones por captura/OCR/PDF/análisis/reglas.
+- [x] Conectar backend de importaciones: server actions para crear lote, revisar items y confirmar como transacciones.
+- [x] Agregar pruebas unitarias con Vitest (37 tests para `deriveAccountBalances` y `calculateDashboardMetrics`).
+- [x] Actualizar service worker a v4 con estrategias cache-first, network-first y stale-while-revalidate.
+- [x] Agregar botón de logout visible en dashboard (iniciales + ícono) y sección de sesión en configuración.
+- [x] Agregar eliminación en cascada de cuentas y tarjetas (ciclos, transacciones, planes MSI).
+- [x] Limpiar formulario de gasto: sin valores demo, inputs controlados, guía accionable cuando faltan datos.
 
 #### Parcial
 
-- [ ] Dashboard con cálculos de dominio: faltan pruebas unitarias para blindar reglas.
+- [ ] Pruebas de integración para server actions críticas (unitarias ya cubiertas con 37 tests).
 
 #### Pendiente
 
-- [x] Configuración inicial/onboarding.
-- [x] Detalle completo de movimientos.
-- [x] Reportes mensuales y por ciclo.
-- [x] Calendario de pagos.
-- [ ] Importación por captura, OCR y PDF.
-- [ ] Usuario dedicado para Prisma en Supabase.
-- [ ] Pruebas unitarias e integración para reglas críticas.
+- [ ] Usuario dedicado para Prisma en Supabase (actualmente usa `postgres`).
+- [ ] Análisis mensual por PDF (requiere integrar `pdfjs-dist`).
+- [ ] Revisión de instalación PWA en iOS y Android.
 
 ## 2. Supabase: siguientes pasos
 
@@ -450,7 +452,7 @@ Crear:
 
 ### 6.2 Configuración manual inicial
 
-Estado: implementado sin seed.
+Estado: implementado sin datos automáticos.
 
 Cada usuario nuevo arranca sin cuentas, categorías, tarjetas, presupuestos ni metas. La configuración se hace desde la app:
 

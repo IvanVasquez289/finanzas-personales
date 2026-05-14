@@ -16,14 +16,17 @@ import {
   createCreditCardAction,
   createGoalAction,
   deactivateAccountAction,
+  deleteAccountAction,
   deleteBudgetAction,
   deleteCategoryAction,
+  deleteCreditCardAction,
   initialSettingsState,
   updateAccountAction,
   updateCategoryAction,
   updateCreditCardAction,
   updateGoalAction,
 } from "./actions";
+import { signOut } from "@/lib/auth-client";
 
 export function SettingsScreen({
   data,
@@ -37,9 +40,11 @@ export function SettingsScreen({
   const [accountState, createAccount, accountPending] = useActionState(createAccountAction, initialSettingsState);
   const [updateAccountState, updateAccount, updateAccountPending] = useActionState(updateAccountAction, initialSettingsState);
   const [deactivateState, deactivateAccount, deactivatePending] = useActionState(deactivateAccountAction, initialSettingsState);
+  const [deleteAccountState, deleteAccount, deleteAccountPending] = useActionState(deleteAccountAction, initialSettingsState);
   const [adjustState, adjustAccount, adjustPending] = useActionState(adjustAccountBalanceAction, initialSettingsState);
   const [cardState, createCard, cardPending] = useActionState(createCreditCardAction, initialSettingsState);
   const [updateCardState, updateCard, updateCardPending] = useActionState(updateCreditCardAction, initialSettingsState);
+  const [deleteCardState, deleteCard, deleteCardPending] = useActionState(deleteCreditCardAction, initialSettingsState);
   const [categoryState, createCategory, categoryPending] = useActionState(createCategoryAction, initialSettingsState);
   const [updateCategoryState, updateCategory, updateCategoryPending] = useActionState(updateCategoryAction, initialSettingsState);
   const [deleteCategoryState, deleteCategory, deleteCategoryPending] = useActionState(deleteCategoryAction, initialSettingsState);
@@ -115,17 +120,24 @@ export function SettingsScreen({
                   <Input name="note" placeholder="Motivo del ajuste" />
                   <Button variant="secondary" disabled={adjustPending}>Ajustar</Button>
                 </form>
-                {account.isActive ? (
-                  <form action={deactivateAccount} className="mt-2">
+                <div className="mt-2 flex items-center gap-4">
+                  {account.isActive ? (
+                    <form action={deactivateAccount}>
+                      <input type="hidden" name="id" value={account.id} />
+                      <button className="text-[12px] text-[#F46A6A]" disabled={deactivatePending}>Desactivar</button>
+                    </form>
+                  ) : null}
+                  <form action={deleteAccount} onSubmit={(e) => { if (!confirm("¿Eliminar esta cuenta permanentemente?")) e.preventDefault(); }}>
                     <input type="hidden" name="id" value={account.id} />
-                    <button className="text-[12px] text-[#F46A6A]" disabled={deactivatePending}>Desactivar</button>
+                    <button className="text-[12px] text-[#F46A6A]/60" disabled={deleteAccountPending}>Eliminar</button>
                   </form>
-                ) : null}
+                </div>
               </Card>
             ))}
             <StateMessage state={updateAccountState} />
             <StateMessage state={adjustState} />
             <StateMessage state={deactivateState} />
+            <StateMessage state={deleteAccountState} />
           </div>
         </section>
         ) : null}
@@ -172,9 +184,14 @@ export function SettingsScreen({
                   </div>
                   <Button variant="secondary" disabled={updateCardPending}>Actualizar tarjeta</Button>
                 </form>
+                <form action={deleteCard} className="mt-2" onSubmit={(e) => { if (!confirm("¿Eliminar esta tarjeta permanentemente?")) e.preventDefault(); }}>
+                  <input type="hidden" name="id" value={card.id} />
+                  <button className="text-[12px] text-[#F46A6A]/60" disabled={deleteCardPending}>Eliminar tarjeta</button>
+                </form>
               </Card>
             ))}
             <StateMessage state={updateCardState} />
+            <StateMessage state={deleteCardState} />
           </div>
         </section>
         ) : null}
@@ -294,6 +311,27 @@ export function SettingsScreen({
           <StateMessage state={deleteBudgetState} />
         </section>
         ) : null}
+        <section className="pb-2">
+          <SectionHeader title="Sesión" />
+          <Card className="p-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[14px] font-semibold">{data.user.name}</div>
+                <div className="mt-0.5 text-[11px] text-[#6a7384]">Cuenta activa</div>
+              </div>
+              <button
+                type="button"
+                className="rounded-xl border border-[#F46A6A]/30 bg-[#F46A6A]/10 px-3.5 py-2 text-[13px] font-medium text-[#F46A6A]"
+                onClick={async () => {
+                  await signOut();
+                  window.location.href = "/sign-in";
+                }}
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </Card>
+        </section>
       </div>
     </>
   );

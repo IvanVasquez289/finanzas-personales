@@ -28,9 +28,9 @@ export function ExpenseFormScreen({
   const currentTime = today.toTimeString().slice(0, 5);
   const form = useForm({
     defaultValues: {
-      amount: "128.40",
-      merchant: "Uber",
-      note: "Didi al aeropuerto, viernes",
+      amount: "0",
+      merchant: "",
+      note: "",
       categoryId: data.expenseForm.categories[0]?.id ?? "",
       accountId: data.expenseForm.accounts[0]?.id ?? "",
       date: currentDate,
@@ -91,10 +91,10 @@ export function ExpenseFormScreen({
 
   return (
     <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
-      <input type="hidden" {...form.register("amount")} />
-      <input type="hidden" {...form.register("categoryId")} />
-      <input type="hidden" {...form.register("accountId")} />
-      <input type="hidden" name="isInstallment" value={isInstallment ? "true" : "false"} />
+      <input type="hidden" name="amount" value={amount} readOnly />
+      <input type="hidden" name="categoryId" value={cat} readOnly />
+      <input type="hidden" name="accountId" value={method} readOnly />
+      <input type="hidden" name="isInstallment" value={isInstallment ? "true" : "false"} readOnly />
       <div className="flex items-center justify-between px-4 pb-3">
         <button type="button" className="text-[14px] text-[#a4adbe]" onClick={onCancel}>Cancelar</button>
         <div className="text-[15px] font-semibold">Nuevo gasto</div>
@@ -140,20 +140,26 @@ export function ExpenseFormScreen({
         </div>
         <div className="mt-2">
           <SectionHeader title={merchantSuggestion ? `Categoría · regla: ${merchantSuggestion.label}` : "Categoría"} />
-          <div className="flex flex-wrap gap-2">
-            {cats.map((c) => (
-              <button
-                type="button"
-                key={c.id}
-                onClick={() => form.setValue("categoryId", c.id)}
-                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium"
-                style={{ background: cat === c.id ? `${c.color}22` : FT.surface, borderColor: cat === c.id ? `${c.color}55` : FT.hairline, color: cat === c.id ? c.color : FT.textDim }}
-              >
-                <Dot color={c.color} />
-                {c.label}
-              </button>
-            ))}
-          </div>
+          {cats.length === 0 ? (
+            <div className="rounded-2xl border border-[#2A5BFF2e] bg-[#2A5BFF0f] px-3.5 py-3 text-[13px] text-[#a4adbe]">
+              Crea categorías desde <span className="font-semibold text-[#2A5BFF]">Setup → Configuración</span> para poder guardar gastos.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {cats.map((c) => (
+                <button
+                  type="button"
+                  key={c.id}
+                  onClick={() => form.setValue("categoryId", c.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium"
+                  style={{ background: cat === c.id ? `${c.color}22` : FT.surface, borderColor: cat === c.id ? `${c.color}55` : FT.hairline, color: cat === c.id ? c.color : FT.textDim }}
+                >
+                  <Dot color={c.color} />
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="mt-[18px]">
           <SectionHeader title="Método de pago" />
@@ -178,7 +184,11 @@ export function ExpenseFormScreen({
               </button>
             ))}
             {filteredMethods.length === 0 ? (
-              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">No hay cuentas para este método.</div>
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                {methods.length === 0
+                  ? "Crea cuentas o sobres desde Setup → Configuración."
+                  : "No hay cuentas para este método."}
+              </div>
             ) : null}
           </Card>
         </div>

@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useMemo, useState } from "react";
-import { ArrowUp, BarChart3, CalendarDays, ScanText, SlidersHorizontal } from "lucide-react";
+import { ArrowUp, BarChart3, CalendarDays, LogOut, ScanText, SlidersHorizontal } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { MiniCard } from "@/components/cards/mini-card";
 import { PaymentRow } from "@/components/dashboard/payment-row";
@@ -83,11 +83,11 @@ export function DashboardScreen({
               await signOut();
               window.location.href = "/sign-in";
             }}
-            className="grid size-9 place-items-center rounded-full border border-white/[0.06] bg-[#161b25] text-[13px] font-medium text-[#a4adbe]"
+            className="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-[#161b25] py-2 pl-2.5 pr-3 text-[12px] font-medium text-[#a4adbe]"
             aria-label="Cerrar sesión"
-            title="Cerrar sesión"
           >
-            {data.user.initials}
+            <span>{data.user.initials}</span>
+            <LogOut size={13} className="opacity-60" />
           </button>
         }
       />

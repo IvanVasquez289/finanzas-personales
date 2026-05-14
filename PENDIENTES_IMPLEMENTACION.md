@@ -19,6 +19,9 @@ Estas tareas afectan directamente si la app sirve para registrar el día y enten
    - [x] MSI como `InstallmentPlan`.
    - [x] Mejor confirmación visual.
    - [x] Duplicados tolerantes por fecha/monto/comercio.
+   - [x] Defaults limpios (sin datos demo hardcodeados).
+   - [x] Hidden inputs con `value` explícito para garantizar FormData correcto.
+   - [x] Empty state con guía accionable cuando no hay categorías o cuentas.
 3. [x] Distribución de quincena completa.
    - [x] Pantalla maquetada.
    - [x] Primera server action implementada.
@@ -42,10 +45,12 @@ Estas tareas afectan directamente si la app sirve para registrar el día y enten
 
 ## Prioridad 2 - Configuración del MVP
 
-Estas tareas permiten dejar de depender del seed y adaptar la app a cambios reales.
+Estas tareas permiten configurar la app desde cero y adaptarla a cambios reales.
 
 1. [x] CRUD de cuentas/sobres.
+   - [x] Eliminación en cascada (incluye movimientos asociados).
 2. [x] CRUD de tarjetas.
+   - [x] Eliminación en cascada (ciclos, transacciones, planes MSI).
 3. [x] Configuración de corte y fecha límite de pago.
 4. [x] Edición de presupuesto personal de tarjeta.
 5. [x] CRUD de categorías.
@@ -61,11 +66,11 @@ Estas tareas hacen que la información deje de estar resumida solamente en cards
 3. [x] Calendario de pagos.
 4. [x] Reportes básicos mensuales.
 5. [x] Reportes por ciclo de tarjeta.
-6. [x] Acciones reales para links tipo “Ver todas”, “Calendario” y “Reordenar”.
-   - [x] “Ver todos” de movimientos.
-   - [x] “Ver todas” de tarjetas.
-   - [x] “Calendario”.
-   - [x] “Reordenar”.
+6. [x] Acciones reales para links tipo "Ver todas", "Calendario" y "Reordenar".
+   - [x] "Ver todos" de movimientos.
+   - [x] "Ver todas" de tarjetas.
+   - [x] "Calendario".
+   - [x] "Reordenar".
 
 ## Prioridad 4 - Seguridad y operación
 
@@ -102,11 +107,9 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 - [x] Calcular dinero libre desde transacciones, allocations y compromisos reales.
 - [x] Calcular dinero comprometido con reglas completas.
 - [x] Agregar alertas reales por presupuesto y exceso de gasto.
-- [x] Conectar acciones de “Ver todas”, calendario y detalle de movimientos.
-  - [x] Movimientos.
-  - [x] Tarjetas.
-  - [x] Calendario.
+- [x] Conectar acciones de "Ver todas", calendario y detalle de movimientos.
 - [x] Agregar filtros por periodo real.
+- [x] Botón de logout visible (iniciales + ícono LogOut).
 
 ### Tarjetas
 
@@ -121,6 +124,7 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 ### Sobres y cuentas
 
 - [x] Crear, editar y desactivar sobres/cuentas.
+- [x] Eliminar en cascada (incluyendo todos los movimientos asociados).
 - [x] Reordenar sobres.
 - [x] Ajustes manuales de saldo con auditoría.
 - [x] Derivar saldos completamente desde movimientos y allocations.
@@ -143,13 +147,15 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 - [x] Crear reglas de comercio a categoría.
 - [x] Mejorar detección de duplicados con tolerancias por fecha/monto/comercio.
 - [x] Mostrar confirmación visual persistente después de guardar.
+- [x] Eliminar valores demo hardcodeados del formulario.
+- [x] Mostrar guía accionable cuando faltan categorías o cuentas.
 
 ### PWA
 
 - [ ] Revisar instalación en iOS y Android.
 - [x] Agregar pantalla offline mínima.
-- [x] Versionar service worker en cada cambio relevante.
-- [ ] Revisar estrategia de cache para assets estáticos y datos dinámicos.
+- [x] Versionar service worker en cada cambio relevante (v4).
+- [x] Estrategia de cache para assets estáticos (cache-first) y datos dinámicos (network-first).
 
 ## Pantallas no maquetadas todavía
 
