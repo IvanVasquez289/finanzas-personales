@@ -1,9 +1,10 @@
 "use client";
 
+import type React from "react";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { ReceiptText } from "lucide-react";
+import { Banknote, CreditCard, ReceiptText, Search, Wallet } from "lucide-react";
 import { Dot } from "@/components/finance/dot";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Tag } from "@/components/finance/tag";
@@ -42,6 +43,7 @@ export function ExpenseFormScreen({
     ok: false,
     message: "",
   });
+  const [methodType, setMethodType] = useState<"all" | "credit_card" | "debit" | "cash">("all");
 
   const amount = form.watch("amount");
   const merchant = form.watch("merchant");
@@ -50,7 +52,21 @@ export function ExpenseFormScreen({
   const isInstallment = form.watch("isInstallment");
   const cats = data.expenseForm.categories;
   const methods = data.expenseForm.accounts;
+  const filteredMethods = methods.filter((item) => methodType === "all" || item.paymentMethod === methodType);
   const selectedMethod = methods.find((item) => item.id === method);
+  const merchantSuggestion = useMemo(() => suggestCategory(merchant, cats), [cats, merchant]);
+  const recentMerchants = useMemo(() => {
+    const seen = new Set<string>();
+    return data.movementDetail
+      .map((transaction) => transaction.merchant)
+      .filter((item) => {
+        const key = item.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 6);
+  }, [data.movementDetail]);
 
   useEffect(() => {
     if (!state.ok) return;
@@ -62,6 +78,16 @@ export function ExpenseFormScreen({
 
     return () => window.clearTimeout(timer);
   }, [onSaved, router, state.ok]);
+
+  useEffect(() => {
+    if (filteredMethods.some((item) => item.id === method)) return;
+    form.setValue("accountId", filteredMethods[0]?.id ?? "");
+  }, [filteredMethods, form, method]);
+
+  useEffect(() => {
+    if (!merchantSuggestion || cat === merchantSuggestion.id) return;
+    form.setValue("categoryId", merchantSuggestion.id);
+  }, [cat, form, merchantSuggestion]);
 
   return (
     <form action={formAction} className="flex flex-1 flex-col overflow-hidden app-top">
@@ -89,14 +115,31 @@ export function ExpenseFormScreen({
       <div className="no-scrollbar flex-1 overflow-auto px-4 pb-4">
         <div className="mt-2">
           <SectionHeader title="Comercio" />
-          <input
-            {...form.register("merchant", { required: true })}
-            className="h-12 w-full rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[15px] text-[#eef2f8] outline-none placeholder:text-[#6a7384] focus:border-[#2A5BFF]/60"
-            placeholder="Uber, Bama, Amazon..."
-          />
+          <label className="flex h-12 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[#a4adbe] focus-within:border-[#2A5BFF]/60">
+            <Search size={16} />
+            <input
+              {...form.register("merchant", { required: true })}
+              className="min-w-0 flex-1 bg-transparent text-[15px] text-[#eef2f8] outline-none placeholder:text-[#6a7384]"
+              placeholder="Uber, Bama, Amazon..."
+            />
+          </label>
+          {recentMerchants.length > 0 ? (
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+              {recentMerchants.map((item) => (
+                <button
+                  type="button"
+                  key={item}
+                  onClick={() => form.setValue("merchant", item)}
+                  className="shrink-0 rounded-full border border-white/[0.08] bg-[#10141d] px-3 py-1.5 text-[12px] text-[#a4adbe]"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         <div className="mt-2">
-          <SectionHeader title="Categoría" />
+          <SectionHeader title={merchantSuggestion ? `Categoría · regla: ${merchantSuggestion.label}` : "Categoría"} />
           <div className="flex flex-wrap gap-2">
             {cats.map((c) => (
               <button
@@ -113,10 +156,17 @@ export function ExpenseFormScreen({
           </div>
         </div>
         <div className="mt-[18px]">
+          <SectionHeader title="Método de pago" />
+          <div className="mb-2 grid grid-cols-4 gap-2">
+            <MethodButton icon={Wallet} label="Todos" active={methodType === "all"} onClick={() => setMethodType("all")} />
+            <MethodButton icon={CreditCard} label="Crédito" active={methodType === "credit_card"} onClick={() => setMethodType("credit_card")} />
+            <MethodButton icon={Banknote} label="Débito" active={methodType === "debit"} onClick={() => setMethodType("debit")} />
+            <MethodButton icon={ReceiptText} label="Cash" active={methodType === "cash"} onClick={() => setMethodType("cash")} />
+          </div>
           <SectionHeader title="Cargar a" />
           <Card className="overflow-hidden">
-            {methods.map((m, index) => (
-              <button type="button" key={m.id} onClick={() => form.setValue("accountId", m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === methods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
+            {filteredMethods.map((m, index) => (
+              <button type="button" key={m.id} onClick={() => form.setValue("accountId", m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === filteredMethods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <span className="grid size-[22px] shrink-0 place-items-center rounded-full border" style={{ borderColor: method === m.id ? FT.accent : "rgba(255,255,255,0.10)" }}>
                   {method === m.id ? <span className="size-2.5 rounded-full bg-[#2A5BFF]" /> : null}
                 </span>
@@ -127,6 +177,9 @@ export function ExpenseFormScreen({
                 {method === m.id && m.cycleLabel ? <Tag color={FT.accent} bg={FT.accentSoft}>{m.cycleLabel}</Tag> : null}
               </button>
             ))}
+            {filteredMethods.length === 0 ? (
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">No hay cuentas para este método.</div>
+            ) : null}
           </Card>
         </div>
         <Card className="mt-3.5 p-3.5">
@@ -201,6 +254,54 @@ export function ExpenseFormScreen({
       <Keypad value={amount} setValue={(value) => form.setValue("amount", value)} />
     </form>
   );
+}
+
+function MethodButton({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-[52px] flex-col items-center justify-center gap-1 rounded-2xl border text-[10px] font-medium"
+      style={{
+        background: active ? FT.accentSoft : "rgba(255,255,255,0.04)",
+        borderColor: active ? "rgba(42,91,255,0.45)" : "rgba(255,255,255,0.08)",
+        color: active ? FT.accent : FT.textDim,
+      }}
+    >
+      <Icon size={16} />
+      {label}
+    </button>
+  );
+}
+
+function suggestCategory(
+  merchant: string,
+  categories: FinanceSnapshot["expenseForm"]["categories"],
+) {
+  const value = merchant.toLowerCase();
+  if (!value.trim()) return null;
+
+  const rules = [
+    { terms: ["uber", "didi", "taxi"], category: "transporte" },
+    { terms: ["oxxo", "bama", "starbucks", "rest", "cafe"], category: "comida" },
+    { terms: ["amazon", "mercado", "liverpool"], category: "libre" },
+    { terms: ["netflix", "spotify", "openai", "github"], category: "tools" },
+    { terms: ["msi", "meses"], category: "msi" },
+  ];
+  const match = rules.find((rule) => rule.terms.some((term) => value.includes(term)));
+  if (!match) return null;
+
+  return categories.find((category) => category.label.toLowerCase().includes(match.category)) ?? null;
 }
 
 function Keypad({ value, setValue }: { value: string; setValue: (value: string) => void }) {

@@ -42,6 +42,7 @@ export type FinanceSnapshot = {
     balance: number;
     color: string;
     note: string;
+    sortOrder: number;
     goal?: number;
     locked?: boolean;
   }[];
@@ -50,6 +51,7 @@ export type FinanceSnapshot = {
     name: string;
     balance: number;
     sub: string;
+    sortOrder: number;
   }[];
   creditCards: {
     accountId: string;
@@ -64,6 +66,7 @@ export type FinanceSnapshot = {
     limit: number;
     cycleLabel: string;
     paymentDue: string;
+    paymentDueIso: string;
     categorySpend: {
       label: string;
       value: number;
@@ -76,6 +79,7 @@ export type FinanceSnapshot = {
     label: string;
     sub: string;
     date: string;
+    dateIso: string;
     amount: number;
     chip: string;
     chipColor?: string;
@@ -112,6 +116,7 @@ export type FinanceSnapshot = {
       type: string;
       balance: number;
       isActive: boolean;
+      sortOrder: number;
       credit?: {
         issuer: string;
         limit: number;
@@ -243,11 +248,11 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     }),
     prisma.account.findMany({
       where: { userId: user.id, isActive: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     }),
     prisma.account.findMany({
       where: { userId: user.id },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       include: { creditAccount: true },
     }),
     prisma.goal.findMany({
@@ -341,6 +346,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
         color: meta.color,
         note: meta.note,
+        sortOrder: account.sortOrder,
         locked: meta.locked,
         goal: account.name === "Ahorro" && mainGoal ? toAmount(mainGoal.targetAmountCents) : undefined,
       };
@@ -398,6 +404,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       limit: toAmount(credit.creditLimitCents),
       cycleLabel: cycle ? formatCycle(cycle.startDate, cycle.endDate) : "Sin ciclo abierto",
       paymentDue: cycle ? formatShortDate(cycle.paymentDueDate) : "Sin fecha",
+      paymentDueIso: cycle?.paymentDueDate.toISOString() ?? "",
       categorySpend,
       transactions: cycleTransactions,
     };
@@ -409,6 +416,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       label: plan.merchant,
       sub: `Mensualidad ${plan.currentInstallment} de ${plan.totalInstallments}`,
       date: formatShortDate(plan.startDate),
+      dateIso: plan.startDate.toISOString(),
       amount: toAmount(plan.monthlyAmountCents),
       chip: plan.account.type === "envelope" ? "Fijos" : "MSI",
       chipColor: plan.account.type === "store_card" ? "#E94B6A" : undefined,
@@ -417,6 +425,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       label: card.issuer,
       sub: "Pago estimado del ciclo",
       date: card.paymentDue,
+      dateIso: card.paymentDueIso,
       amount: card.due,
       chip: "Tarjeta",
       chipColor: card.dot,
@@ -480,6 +489,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         id: account.id,
         balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
         sub: "Cuenta activa",
+        sortOrder: account.sortOrder,
       })),
     creditCards,
     payments,
@@ -539,6 +549,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         type: account.type,
         balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
         isActive: account.isActive,
+        sortOrder: account.sortOrder,
         credit: account.creditAccount
           ? {
               issuer: account.creditAccount.issuer,

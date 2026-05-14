@@ -58,14 +58,14 @@ Estas tareas hacen que la información deje de estar resumida solamente en cards
 
 1. [x] Detalle completo de movimientos.
 2. [x] Detalle de movimientos por tarjeta/ciclo.
-3. [ ] Calendario de pagos.
-4. [ ] Reportes básicos mensuales.
-5. [ ] Reportes por ciclo de tarjeta.
-6. [ ] Acciones reales para links tipo “Ver todas”, “Calendario” y “Reordenar”.
+3. [x] Calendario de pagos.
+4. [x] Reportes básicos mensuales.
+5. [x] Reportes por ciclo de tarjeta.
+6. [x] Acciones reales para links tipo “Ver todas”, “Calendario” y “Reordenar”.
    - [x] “Ver todos” de movimientos.
    - [x] “Ver todas” de tarjetas.
-   - [ ] “Calendario”.
-   - [ ] “Reordenar”.
+   - [x] “Calendario”.
+   - [x] “Reordenar”.
 
 ## Prioridad 4 - Seguridad y operación
 
@@ -74,7 +74,7 @@ Estas tareas son importantes antes de usar la app como sistema estable.
 1. [x] Autenticación simple.
    - [x] Integración con Better Auth en código.
    - [x] Migración de Auth aplicada en Supabase.
-2. [ ] Configuración inicial/onboarding.
+2. [x] Configuración inicial/onboarding.
 3. [ ] Usuario dedicado para Prisma en Supabase en vez de `postgres`.
 4. [x] Revisar permisos de Data API con RLS y revokes.
 5. [ ] Revisar permisos de runtime con usuario dedicado.
@@ -102,10 +102,10 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 - [x] Calcular dinero libre desde transacciones, allocations y compromisos reales.
 - [x] Calcular dinero comprometido con reglas completas.
 - [x] Agregar alertas reales por presupuesto y exceso de gasto.
-- [ ] Conectar acciones de “Ver todas”, calendario y detalle de movimientos.
+- [x] Conectar acciones de “Ver todas”, calendario y detalle de movimientos.
   - [x] Movimientos.
   - [x] Tarjetas.
-  - [ ] Calendario.
+  - [x] Calendario.
 - [x] Agregar filtros por periodo real.
 
 ### Tarjetas
@@ -121,7 +121,7 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 ### Sobres y cuentas
 
 - [x] Crear, editar y desactivar sobres/cuentas.
-- [ ] Reordenar sobres.
+- [x] Reordenar sobres.
 - [x] Ajustes manuales de saldo con auditoría.
 - [x] Derivar saldos completamente desde movimientos y allocations.
 - [ ] Separar cuentas bancarias reales de sobres contables cuando sea necesario.
@@ -138,9 +138,9 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 
 - [x] Convertir UI a React Hook Form.
 - [x] Permitir elegir fecha y hora del gasto.
-- [ ] Permitir editar método de pago y comercio con mejor UX.
+- [x] Permitir editar método de pago y comercio con mejor UX.
 - [x] Manejar MSI como `InstallmentPlan`.
-- [ ] Crear reglas de comercio a categoría.
+- [x] Crear reglas de comercio a categoría.
 - [x] Mejorar detección de duplicados con tolerancias por fecha/monto/comercio.
 - [x] Mostrar confirmación visual persistente después de guardar.
 
@@ -154,19 +154,19 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 ## Pantallas no maquetadas todavía
 
 - [x] Autenticación simple.
-- [ ] Configuración inicial/onboarding.
-- [ ] Alta/edición de cuentas.
-- [ ] Alta/edición de tarjetas.
+- [x] Configuración inicial/onboarding.
+- [x] Alta/edición de cuentas.
+- [x] Alta/edición de tarjetas.
 - [x] Configuración de corte y fecha límite de pago.
-- [ ] Alta/edición de categorías.
-- [ ] Alta/edición de presupuestos.
+- [x] Alta/edición de categorías.
+- [x] Alta/edición de presupuestos.
 - [x] Detalle completo de movimientos.
-- [ ] Reportes mensuales.
-- [ ] Reportes por ciclo.
-- [ ] Calendario de pagos.
-- [ ] Pantalla de importación por captura.
-- [ ] Pantalla de revisión de OCR.
-- [ ] Pantalla de importación por PDF.
-- [ ] Pantalla de análisis mensual por PDF.
-- [ ] Configuración de reglas de categorización.
-- [ ] Configuración de normalización de comercios.
+- [x] Reportes mensuales.
+- [x] Reportes por ciclo.
+- [x] Calendario de pagos.
+- [x] Pantalla de importación por captura.
+- [x] Pantalla de revisión de OCR.
+- [x] Pantalla de importación por PDF.
+- [x] Pantalla de análisis mensual por PDF.
+- [x] Configuración de reglas de categorización.
+- [x] Configuración de normalización de comercios.

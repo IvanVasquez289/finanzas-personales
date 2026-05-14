@@ -35,12 +35,14 @@ export async function createAccountAction(
   if (!user) return error("Inicia sesión.");
 
   const balanceCents = toCents(parsed.data.openingBalance);
+  const sortOrder = await nextAccountSortOrder(user.id);
   const account = await prisma.account.create({
     data: {
       userId: user.id,
       name: parsed.data.name,
       type: parsed.data.type,
       currentBalanceCents: balanceCents,
+      sortOrder,
     },
   });
 
@@ -165,6 +167,55 @@ export async function adjustAccountBalanceAction(
   return { ok: true, message: "Ajuste registrado." };
 }
 
+export async function reorderAccountAction(
+  _state: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const parsed = z.object({
+    id: z.string().min(1),
+    direction: z.enum(["up", "down"]),
+  }).safeParse({
+    id: formData.get("id"),
+    direction: formData.get("direction"),
+  });
+
+  if (!parsed.success) return error("Selecciona un sobre.");
+  const user = await getCurrentFinanceUser();
+  if (!user) return error("Inicia sesión.");
+
+  const accounts = await prisma.account.findMany({
+    where: {
+      userId: user.id,
+      isActive: true,
+      type: { in: ["savings", "envelope"] },
+    },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+  const currentIndex = accounts.findIndex((account) => account.id === parsed.data.id);
+  if (currentIndex < 0) return error("El sobre no existe.");
+
+  const targetIndex = parsed.data.direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= accounts.length) {
+    return { ok: true, message: "El orden ya está actualizado." };
+  }
+
+  const nextAccounts = [...accounts];
+  const [current] = nextAccounts.splice(currentIndex, 1);
+  nextAccounts.splice(targetIndex, 0, current);
+
+  await prisma.$transaction(
+    nextAccounts.map((account, index) =>
+      prisma.account.updateMany({
+        where: { id: account.id, userId: user.id },
+        data: { sortOrder: index },
+      }),
+    ),
+  );
+
+  revalidatePath("/");
+  return { ok: true, message: "Orden actualizado." };
+}
+
 export async function createCreditCardAction(
   _state: SettingsActionState,
   formData: FormData,
@@ -196,6 +247,7 @@ export async function createCreditCardAction(
       userId: user.id,
       name: parsed.data.name,
       type: parsed.data.type,
+      sortOrder: await nextAccountSortOrder(user.id),
       creditAccount: {
         create: {
           issuer: parsed.data.issuer,
@@ -446,6 +498,16 @@ export async function deleteBudgetAction(
 
 function toCents(amount: number) {
   return Math.round(amount * 100);
+}
+
+async function nextAccountSortOrder(userId: string) {
+  const last = await prisma.account.findFirst({
+    where: { userId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+
+  return (last?.sortOrder ?? -1) + 1;
 }
 
 function error(message = "Revisa los datos.") {

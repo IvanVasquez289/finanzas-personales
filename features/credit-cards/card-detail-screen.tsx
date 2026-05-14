@@ -47,6 +47,7 @@ export function CardDetailScreen({
     limit: 0,
     cycleLabel: "Sin ciclo abierto",
     paymentDue: "Sin fecha",
+    paymentDueIso: "",
     categorySpend: [],
     transactions: [],
   };

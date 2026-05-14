@@ -68,6 +68,10 @@ Estado importante:
 - [x] Agregar pantalla offline mínima y actualizar service worker a `finanzas-pwa-v3`.
 - [x] Agregar detalle completo de movimientos con filtros y búsqueda.
 - [x] Mostrar movimientos del ciclo dentro del detalle de tarjeta.
+- [x] Conectar calendario de pagos, reportes mensuales y reportes por ciclo.
+- [x] Agregar reordenamiento persistente de sobres con `sortOrder`.
+- [x] Mejorar registro de gasto con método de pago explícito, comercios frecuentes y reglas de categoría.
+- [x] Maquetar onboarding e importaciones por captura/OCR/PDF/análisis/reglas.
 
 #### Parcial
 
@@ -75,10 +79,10 @@ Estado importante:
 
 #### Pendiente
 
-- [ ] Configuración inicial/onboarding.
+- [x] Configuración inicial/onboarding.
 - [x] Detalle completo de movimientos.
-- [ ] Reportes mensuales y por ciclo.
-- [ ] Calendario de pagos.
+- [x] Reportes mensuales y por ciclo.
+- [x] Calendario de pagos.
 - [ ] Importación por captura, OCR y PDF.
 - [ ] Usuario dedicado para Prisma en Supabase.
 - [ ] Pruebas unitarias e integración para reglas críticas.

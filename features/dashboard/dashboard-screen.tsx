@@ -1,7 +1,8 @@
 "use client";
 
+import type React from "react";
 import { useMemo, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, BarChart3, CalendarDays, ScanText, SlidersHorizontal } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { MiniCard } from "@/components/cards/mini-card";
 import { PaymentRow } from "@/components/dashboard/payment-row";
@@ -24,10 +25,18 @@ export function DashboardScreen({
   data,
   onViewCards,
   onViewTransactions,
+  onViewCalendar,
+  onViewReports,
+  onViewImports,
+  onViewOnboarding,
 }: {
   data: FinanceSnapshot;
   onViewCards: () => void;
   onViewTransactions: () => void;
+  onViewCalendar: () => void;
+  onViewReports: () => void;
+  onViewImports: () => void;
+  onViewOnboarding: () => void;
 }) {
   const [periodDays, setPeriodDays] = useState(30);
   const libreTotal = data.allocation.libre;
@@ -139,6 +148,13 @@ export function DashboardScreen({
           ))}
         </div>
 
+        <div className="grid grid-cols-4 gap-2">
+          <QuickAction icon={CalendarDays} label="Calendario" onClick={onViewCalendar} />
+          <QuickAction icon={BarChart3} label="Reportes" onClick={onViewReports} />
+          <QuickAction icon={ScanText} label="Importar" onClick={onViewImports} />
+          <QuickAction icon={SlidersHorizontal} label="Setup" onClick={onViewOnboarding} />
+        </div>
+
         <Card className="p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -196,7 +212,7 @@ export function DashboardScreen({
         </div>
 
         <div>
-          <SectionHeader title="Próximos pagos" action="Calendario →" />
+          <SectionHeader title="Próximos pagos" action="Calendario →" onAction={onViewCalendar} />
           <Card className="overflow-hidden">
             {data.payments.map((payment, index) => (
               <PaymentRow key={payment.label} {...payment} last={index === data.payments.length - 1} />
@@ -239,5 +255,26 @@ export function DashboardScreen({
         </div>
       </div>
     </>
+  );
+}
+
+function QuickAction({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-[58px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/[0.08] bg-[#10141d] text-[11px] font-medium text-[#a4adbe]"
+    >
+      <Icon size={17} />
+      <span>{label}</span>
+    </button>
   );
 }

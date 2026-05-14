@@ -13,7 +13,15 @@ import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
 
-export function EnvelopesScreen({ data, onManage }: { data: FinanceSnapshot; onManage: () => void }) {
+export function EnvelopesScreen({
+  data,
+  onManage,
+  onReorder,
+}: {
+  data: FinanceSnapshot;
+  onManage: () => void;
+  onReorder: () => void;
+}) {
   const total = data.envelopes.reduce((a, s) => a + s.balance, 0) + data.bankAccounts.reduce((a, c) => a + c.balance, 0);
   const savingsTotal = data.envelopes.find((envelope) => envelope.name === "Ahorro")?.balance ?? 0;
   const committedTotal = data.envelopes
@@ -48,7 +56,7 @@ export function EnvelopesScreen({ data, onManage }: { data: FinanceSnapshot; onM
           </div>
         </Card>
         <div>
-          <SectionHeader title="Sobres" action="Reordenar →" />
+          <SectionHeader title="Sobres" action="Reordenar →" onAction={onReorder} />
           <div className="flex flex-col gap-2.5">
             {data.envelopes.map((envelope) => (
               <EnvelopeCard key={envelope.name} {...envelope} />
@@ -56,7 +64,7 @@ export function EnvelopesScreen({ data, onManage }: { data: FinanceSnapshot; onM
           </div>
         </div>
         <div>
-          <SectionHeader title="Cuentas bancarias" action="+ Agregar" />
+          <SectionHeader title="Cuentas bancarias" action="+ Agregar" onAction={onManage} />
           <Card className="overflow-hidden">
             {data.bankAccounts.map((account, index) => (
               <div key={account.name} className={`flex items-center gap-3 px-4 py-3.5 ${index === data.bankAccounts.length - 1 ? "" : "border-b border-white/[0.06]"}`}>

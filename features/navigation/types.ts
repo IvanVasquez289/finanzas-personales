@@ -5,6 +5,11 @@ export type AppScreen =
   | "env"
   | "goal"
   | "transactions"
+  | "calendar"
+  | "reports"
+  | "imports"
+  | "onboarding"
+  | "reorder-envelopes"
   | "settings-accounts"
   | "settings-cards"
   | "settings-plan";
