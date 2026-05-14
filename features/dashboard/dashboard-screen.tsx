@@ -264,7 +264,7 @@ export function DashboardScreen({
           <SectionHeader title="Movimientos recientes" action="Ver todos →" onAction={onViewTransactions} />
           <Card className="overflow-hidden">
             {filteredTransactions.map((tx, index) => (
-              <TransactionRow key={`${tx.merchant}-${tx.date}`} {...tx} last={index === filteredTransactions.length - 1} />
+              <TransactionRow key={tx.id} {...tx} last={index === filteredTransactions.length - 1} />
             ))}
             {filteredTransactions.length === 0 ? (
               <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">Sin movimientos en este periodo.</div>

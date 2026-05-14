@@ -99,7 +99,7 @@ export function DistributionScreen({
           <BigNum value={ingreso} size={36} />
           <Tag color={FT.pos} bg={FT.posSoft}>+ ingreso</Tag>
         </div>
-        <div className="mt-3 grid grid-cols-[1fr_150px] gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 min-[390px]:grid-cols-[1fr_150px]">
           <label className="text-[12px] text-[#6a7384]">
             Monto recibido
             <input
@@ -107,7 +107,7 @@ export function DistributionScreen({
               min={0}
               step="0.01"
               {...form.register("amount", { valueAsNumber: true })}
-              className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
             />
           </label>
           <label className="text-[12px] text-[#6a7384]">
@@ -115,7 +115,7 @@ export function DistributionScreen({
             <input
               type="date"
               {...form.register("receivedAt")}
-              className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
             />
           </label>
         </div>

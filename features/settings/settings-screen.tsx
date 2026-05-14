@@ -108,13 +108,13 @@ export function SettingsScreen({
             />
 
             {createAccountOpen && (
-              <Card className="mb-3 p-3.5">
-                <div className="mb-2 flex items-center justify-between">
+              <Card className="mb-4 p-4">
+                <div className="mb-3 flex items-center justify-between">
                   <span className="text-[13px] font-semibold">Nueva cuenta</span>
                   <button type="button" onClick={() => setCreateAccountOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
-                <form action={createAccount} className="grid gap-2">
-                  <div className="grid grid-cols-[1fr_112px] gap-2">
+                <form action={createAccount} className="grid gap-3">
+                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[1fr_128px]">
                     <Input name="name" placeholder="Nombre" autoFocus />
                     <select name="type" className={fieldClass}>
                       <option value="envelope">Sobre</option>
@@ -130,7 +130,7 @@ export function SettingsScreen({
               </Card>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {accounts.map((account) => (
                 <Card key={account.id} className="overflow-hidden">
                   <button
@@ -149,8 +149,8 @@ export function SettingsScreen({
                   </button>
 
                   {editingAccountId === account.id && (
-                    <div className="border-t border-white/[0.06] px-3.5 pb-3.5 pt-3">
-                      <form action={updateAccount} className="grid grid-cols-[1fr_104px_80px] gap-2">
+                    <div className="border-t border-white/[0.06] px-4 pb-4 pt-3.5">
+                      <form action={updateAccount} className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[1fr_124px]">
                         <input type="hidden" name="id" value={account.id} />
                         <Input name="name" defaultValue={account.name} />
                         <select name="type" defaultValue={account.type} className={fieldClass}>
@@ -159,13 +159,13 @@ export function SettingsScreen({
                           <option value="debit">Débito</option>
                           <option value="cash">Efectivo</option>
                         </select>
-                        <Button variant="secondary" disabled={updateAccountPending}>Guardar</Button>
+                        <Button variant="secondary" disabled={updateAccountPending} className="min-[390px]:col-span-2">Guardar</Button>
                       </form>
-                      <form action={adjustAccount} className="mt-2 grid grid-cols-[88px_1fr_80px] gap-2">
+                      <form action={adjustAccount} className="mt-3 grid grid-cols-1 gap-3 min-[390px]:grid-cols-[112px_1fr]">
                         <input type="hidden" name="id" value={account.id} />
                         <Input name="amount" type="number" step="0.01" placeholder="+/- monto" />
                         <Input name="note" placeholder="Motivo del ajuste" />
-                        <Button variant="secondary" disabled={adjustPending}>Ajustar</Button>
+                        <Button variant="secondary" disabled={adjustPending} className="min-[390px]:col-span-2">Ajustar</Button>
                       </form>
                       <div className="mt-3 flex items-center gap-4">
                         {account.isActive ? (
@@ -210,21 +210,21 @@ export function SettingsScreen({
             />
 
             {createCategoryOpen && (
-              <Card className="mb-3 p-3.5">
-                <div className="mb-2 flex items-center justify-between">
+              <Card className="mb-4 p-4">
+                <div className="mb-3 flex items-center justify-between">
                   <span className="text-[13px] font-semibold">Nueva categoría</span>
                   <button type="button" onClick={() => setCreateCategoryOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
-                <form action={createCategory} className="grid grid-cols-[1fr_76px_90px] gap-2">
+                <form action={createCategory} className="grid grid-cols-[1fr_64px] gap-3 min-[390px]:grid-cols-[1fr_76px]">
                   <Input name="name" placeholder="Nombre" autoFocus />
                   <Input name="color" type="color" defaultValue="#a4adbe" />
-                  <Button disabled={categoryPending}>Crear</Button>
+                  <Button disabled={categoryPending} className="col-span-2">Crear</Button>
                 </form>
                 <StateMessage state={categoryState} />
               </Card>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {activeCategories.map((category) => (
                 <Card key={category.id} className="overflow-hidden">
                   <button
@@ -238,12 +238,12 @@ export function SettingsScreen({
                   </button>
 
                   {editingCategoryId === category.id && (
-                    <div className="border-t border-white/[0.06] px-3.5 pb-3.5 pt-3">
-                      <form action={updateCategory} className="grid grid-cols-[1fr_76px_90px] gap-2">
+                    <div className="border-t border-white/[0.06] px-4 pb-4 pt-3.5">
+                      <form action={updateCategory} className="grid grid-cols-[1fr_64px] gap-3 min-[390px]:grid-cols-[1fr_76px]">
                         <input type="hidden" name="id" value={category.id} />
                         <Input name="name" defaultValue={category.name} />
                         <Input name="color" type="color" defaultValue={category.color} />
-                        <Button variant="secondary" disabled={updateCategoryPending}>Guardar</Button>
+                        <Button variant="secondary" disabled={updateCategoryPending} className="col-span-2">Guardar</Button>
                       </form>
                       <div className="mt-3 flex items-center gap-4">
                         {!category.isSystem ? (
@@ -278,13 +278,13 @@ export function SettingsScreen({
             />
 
             {createBudgetOpen && (
-              <Card className="mb-3 p-3.5">
-                <div className="mb-2 flex items-center justify-between">
+              <Card className="mb-4 p-4">
+                <div className="mb-3 flex items-center justify-between">
                   <span className="text-[13px] font-semibold">Nuevo presupuesto</span>
                   <button type="button" onClick={() => setCreateBudgetOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
-                <form action={createBudget} className="grid gap-2">
-                  <div className="grid grid-cols-[112px_1fr] gap-2">
+                <form action={createBudget} className="grid gap-3">
+                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[128px_1fr]">
                     <select name="scope" className={fieldClass}>
                       <option value="category">Categoría</option>
                       <option value="account">Cuenta</option>
@@ -294,7 +294,7 @@ export function SettingsScreen({
                       {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-3">
                     <Input name="amount" type="number" step="0.01" placeholder="Monto" />
                     <Input name="periodStart" type="date" />
                     <Input name="periodEnd" type="date" />
@@ -344,25 +344,25 @@ export function SettingsScreen({
             />
 
             {createCardOpen && (
-              <Card className="mb-3 p-3.5">
-                <div className="mb-2 flex items-center justify-between">
+              <Card className="mb-4 p-4">
+                <div className="mb-3 flex items-center justify-between">
                   <span className="text-[13px] font-semibold">Nueva tarjeta</span>
                   <button type="button" onClick={() => setCreateCardOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
-                <form action={createCard} className="grid gap-2">
-                  <div className="grid grid-cols-2 gap-2">
+                <form action={createCard} className="grid gap-3">
+                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
                     <Input name="name" placeholder="Nombre (ej. BBVA Azul)" autoFocus />
                     <Input name="issuer" placeholder="Emisor (ej. BBVA)" />
                   </div>
                   <CardColorPicker name="color" defaultValue="#2A5BFF" />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
                     <select name="type" className={fieldClass}>
                       <option value="credit_card">Crédito</option>
                       <option value="store_card">Departamental</option>
                     </select>
                     <Input name="creditLimit" type="number" step="0.01" placeholder="Límite bancario" />
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-3">
                     <Input name="cutoffDay" type="number" min={1} max={31} placeholder="Día corte" />
                     <Input name="paymentDueDay" type="number" min={1} max={31} placeholder="Día pago" />
                     <Input name="personalBudget" type="number" step="0.01" placeholder="Mi presupuesto" />
@@ -373,7 +373,7 @@ export function SettingsScreen({
               </Card>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {cards.map((card) => (
                 <Card key={card.id} className="overflow-hidden">
                   <button
@@ -393,15 +393,15 @@ export function SettingsScreen({
                   </button>
 
                   {editingCardId === card.id && (
-                    <div className="border-t border-white/[0.06] px-3.5 pb-3.5 pt-3">
-                      <form action={updateCard} className="grid gap-2">
+                    <div className="border-t border-white/[0.06] px-4 pb-4 pt-3.5">
+                      <form action={updateCard} className="grid gap-3">
                         <input type="hidden" name="accountId" value={card.id} />
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
                           <Input name="name" defaultValue={card.name} placeholder="Nombre" />
                           <Input name="issuer" defaultValue={card.credit?.issuer} placeholder="Emisor" />
                         </div>
                         <CardColorPicker name="color" defaultValue={card.credit?.color ?? "#2A5BFF"} />
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
                           <Input name="creditLimit" type="number" step="0.01" defaultValue={card.credit?.limit} placeholder="Límite" />
                           <Input name="cutoffDay" type="number" min={1} max={31} defaultValue={card.credit?.cutoffDay} placeholder="Corte" />
                           <Input name="paymentDueDay" type="number" min={1} max={31} defaultValue={card.credit?.paymentDueDay} placeholder="Pago" />
@@ -466,21 +466,21 @@ export function SettingsScreen({
             />
 
             {createGoalOpen && (
-              <Card className="mb-3 p-3.5">
-                <div className="mb-2 flex items-center justify-between">
+              <Card className="mb-4 p-4">
+                <div className="mb-3 flex items-center justify-between">
                   <span className="text-[13px] font-semibold">Nueva meta</span>
                   <button type="button" onClick={() => setCreateGoalOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
-                <form action={createGoal} className="grid grid-cols-[1fr_112px_90px] gap-2">
+                <form action={createGoal} className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[1fr_132px]">
                   <Input name="name" placeholder="Nombre de la meta" autoFocus />
                   <Input name="targetAmount" type="number" step="0.01" placeholder="Objetivo $" />
-                  <Button disabled={goalPending}>Crear</Button>
+                  <Button disabled={goalPending} className="min-[390px]:col-span-2">Crear</Button>
                 </form>
                 <StateMessage state={goalState} />
               </Card>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {data.settings.goals.map((goal) => (
                 <Card key={goal.id} className="overflow-hidden">
                   <button
@@ -499,8 +499,8 @@ export function SettingsScreen({
                   </button>
 
                   {editingGoalId === goal.id && (
-                    <div className="border-t border-white/[0.06] px-3.5 pb-3.5 pt-3">
-                      <form action={updateGoal} className="grid grid-cols-[1fr_104px_104px_82px] gap-2">
+                    <div className="border-t border-white/[0.06] px-4 pb-4 pt-3.5">
+                      <form action={updateGoal} className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
                         <input type="hidden" name="id" value={goal.id} />
                         <Input name="name" defaultValue={goal.name} />
                         <Input name="targetAmount" type="number" step="0.01" defaultValue={goal.targetAmount} />
@@ -509,7 +509,7 @@ export function SettingsScreen({
                           <option value="paused">Pausada</option>
                           <option value="completed">Completa</option>
                         </select>
-                        <Button variant="secondary" disabled={updateGoalPending}>Guardar</Button>
+                        <Button variant="secondary" disabled={updateGoalPending} className="min-[390px]:col-span-2">Guardar</Button>
                       </form>
                       <div className="mt-3 flex justify-end">
                         <button type="button" onClick={() => setEditingGoalId(null)} className="text-[12px] text-[#6a7384]">Cancelar</button>
@@ -670,4 +670,4 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${fieldClass} ${props.className ?? ""}`} />;
 }
 
-const fieldClass = "h-10 min-w-0 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none placeholder:text-[#6a7384] focus:border-[#2A5BFF]/60";
+const fieldClass = "h-11 min-w-0 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none placeholder:text-[#6a7384] focus:border-[#2A5BFF]/60";

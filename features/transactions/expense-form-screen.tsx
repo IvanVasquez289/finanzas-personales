@@ -112,7 +112,7 @@ export function ExpenseFormScreen({
         </div>
         <div className="mt-1.5 text-[12px] text-[#6a7384]">Hoy · {merchant || "Sin comercio"}</div>
       </div>
-      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[222px] pt-3">
+      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[226px] pt-4">
         <div className="mt-2">
           <SectionHeader title="Comercio" />
           <label className="flex h-12 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[#a4adbe] focus-within:border-[#2A5BFF]/60">
@@ -163,7 +163,7 @@ export function ExpenseFormScreen({
         </div>
         <div className="mt-4">
           <SectionHeader title="Método de pago" />
-          <div className="mb-2 grid grid-cols-4 gap-1.5">
+          <div className="mb-3 grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
             <MethodButton icon={Wallet} label="Todos" active={methodType === "all"} onClick={() => setMethodType("all")} />
             <MethodButton icon={CreditCard} label="Crédito" active={methodType === "credit_card"} onClick={() => setMethodType("credit_card")} />
             <MethodButton icon={Banknote} label="Débito" active={methodType === "debit"} onClick={() => setMethodType("debit")} />
@@ -192,7 +192,7 @@ export function ExpenseFormScreen({
             ) : null}
           </Card>
         </div>
-        <Card className="mt-3 p-3.5">
+        <Card className="mt-4 p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[14px] font-medium">¿Meses sin intereses?</div>
@@ -207,7 +207,7 @@ export function ExpenseFormScreen({
             </button>
           </div>
           {isInstallment ? (
-            <div className="mt-3 grid grid-cols-[1fr_84px] items-center gap-3">
+            <div className="mt-3 grid grid-cols-[1fr_96px] items-center gap-3">
               <label className="text-[12px] text-[#a4adbe]" htmlFor="installments">
                 Parcialidades
               </label>
@@ -217,19 +217,19 @@ export function ExpenseFormScreen({
                 min={2}
                 max={24}
                 {...form.register("installments", { valueAsNumber: true })}
-                className="h-9 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[14px] outline-none focus:border-[#2A5BFF]/60"
+                className="h-11 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-right font-mono text-[14px] outline-none focus:border-[#2A5BFF]/60"
               />
             </div>
           ) : null}
         </Card>
-        <Card className="mt-3 p-3.5">
-          <div className="grid grid-cols-2 gap-3">
+        <Card className="mt-4 p-4">
+          <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
             <label className="text-[12px] text-[#6a7384]">
               Fecha
               <input
                 type="date"
                 {...form.register("date", { required: true })}
-                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
             <label className="text-[12px] text-[#6a7384]">
@@ -237,12 +237,12 @@ export function ExpenseFormScreen({
               <input
                 type="time"
                 {...form.register("time", { required: true })}
-                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
           </div>
         </Card>
-        <Card className="mt-3 p-3.5">
+        <Card className="mt-4 p-4">
           <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Nota</div>
           <input
             {...form.register("note")}
@@ -281,7 +281,7 @@ function MethodButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[48px] flex-col items-center justify-center gap-1 rounded-2xl border text-[10px] font-medium"
+      className="flex h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border text-[10px] font-medium"
       style={{
         background: active ? FT.accentSoft : "rgba(255,255,255,0.04)",
         borderColor: active ? "rgba(42,91,255,0.45)" : "rgba(255,255,255,0.08)",

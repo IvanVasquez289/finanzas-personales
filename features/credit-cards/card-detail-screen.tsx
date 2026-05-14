@@ -93,26 +93,56 @@ export function CardDetailScreen({
         </button>
       </div>
       {data.creditCards.length > 1 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {data.creditCards.map((item, index) => (
-            <button
-              key={item.issuer}
-              type="button"
-              className="flex min-w-[136px] items-center gap-2 rounded-2xl border px-3 py-2 text-left"
-              style={{
-                background: index === selectedCard ? `${item.dot}18` : "rgba(255,255,255,0.04)",
-                borderColor: index === selectedCard ? `${item.dot}55` : "rgba(255,255,255,0.08)",
-                color: index === selectedCard ? FT.text : FT.textDim,
-              }}
-              onClick={() => setSelectedCard(index)}
-            >
-              <span className="size-2.5 rounded-full" style={{ background: item.dot }} />
-              <span className="min-w-0">
-                <span className="block truncate text-[13px] font-semibold">{item.issuer}</span>
-                <span className="mt-0.5 block font-mono text-[11px] text-[#6a7384]">{money(item.used)} usados</span>
-              </span>
-            </button>
-          ))}
+        <div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <div className="text-[11px] uppercase tracking-[0.08em] text-[#6a7384]">Tarjetas</div>
+            <div className="font-mono text-[11px] text-[#6a7384]">{selectedCard + 1}/{data.creditCards.length} · desliza</div>
+          </div>
+          <div className="relative -mx-4 overflow-hidden">
+            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
+              {data.creditCards.map((item, index) => {
+                const selected = index === selectedCard;
+                const usagePct = item.budget > 0 ? Math.min(100, Math.round((item.used / item.budget) * 100)) : 0;
+
+                return (
+                  <button
+                    key={item.accountId}
+                    type="button"
+                    className="min-w-[238px] snap-start rounded-[20px] border p-3.5 text-left transition-colors"
+                    style={{
+                      background: selected
+                        ? `linear-gradient(135deg, ${item.dot}24, rgba(255,255,255,0.045))`
+                        : "rgba(255,255,255,0.04)",
+                      borderColor: selected ? `${item.dot}80` : "rgba(255,255,255,0.08)",
+                      boxShadow: selected ? `0 0 0 1px ${item.dot}24 inset` : "none",
+                    }}
+                    onClick={() => setSelectedCard(index)}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <span className="mt-1 size-2.5 shrink-0 rounded-full" style={{ background: item.dot }} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-semibold text-[#eef2f8]">{item.issuer}</span>
+                        <span className="mt-1 block text-[11px] text-[#6a7384]">
+                          {item.cycleLabel === "Sin ciclo abierto" ? "Sin ciclo abierto" : item.paymentDue ? `Pago ${item.paymentDue}` : item.cycleLabel}
+                        </span>
+                      </span>
+                      <span className="rounded-full px-2 py-1 font-mono text-[10px]" style={{ background: `${item.dot}1f`, color: item.dot }}>
+                        {usagePct}%
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-baseline justify-between gap-3">
+                      <span className="font-mono text-[15px] font-semibold text-[#eef2f8]">{money(item.used)}</span>
+                      <span className="truncate text-[11px] text-[#6a7384]">de {money(item.budget)}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+                      <div className="h-full rounded-full" style={{ width: `${usagePct}%`, background: item.dot }} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#06080c] to-transparent" />
+          </div>
         </div>
       ) : null}
       <div className="relative h-[196px] overflow-hidden rounded-[20px] p-5 text-white shadow-[0_12px_40px_rgba(42,91,255,0.32)]" style={{ background: cardGradient }}>
@@ -178,7 +208,7 @@ export function CardDetailScreen({
               Cuenta origen
               <select
                 name="paymentAccountId"
-                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
                 defaultValue={paymentSources[0]?.id ?? ""}
               >
                 {paymentSources.map((source) => (
@@ -196,7 +226,7 @@ export function CardDetailScreen({
                 step="0.01"
                 value={paymentAmount}
                 onChange={(event) => setPaymentAmount(Number(event.target.value))}
-                className="mt-1.5 h-10 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
             <Button className="w-full" disabled={paymentPending || card.due <= 0 || paymentSources.length === 0}>

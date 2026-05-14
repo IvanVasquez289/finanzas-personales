@@ -159,26 +159,26 @@ function TransactionEditRow({
       <TransactionRow {...transaction} last />
       <div className={`px-4 pb-3 pl-[60px] ${last ? "" : editing ? "" : "border-b border-white/[0.06]"}`}>
         {editing ? (
-          <form action={updateAction} className="grid gap-2 pt-1">
+          <form action={updateAction} className="grid gap-3 pt-1">
             <input type="hidden" name="transactionId" value={transaction.id} />
             <input
               name="merchant"
               defaultValue={transaction.merchant}
               required
-              className="h-9 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              className="h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               placeholder="Comercio"
             />
             <select
               name="categoryId"
               defaultValue={transaction.categoryId ?? ""}
-              className="h-9 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              className="h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
             >
               <option value="">Sin categoría</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
             </select>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
               <input
                 name="amount"
                 type="number"
@@ -186,14 +186,14 @@ function TransactionEditRow({
                 step="0.01"
                 defaultValue={Math.abs(transaction.amount)}
                 required
-                className="h-9 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="h-11 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
               <input
                 name="date"
                 type="date"
                 defaultValue={transaction.dateIso.slice(0, 10)}
                 required
-                className="h-9 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="h-11 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </div>
             {updateState.message ? (
@@ -201,11 +201,11 @@ function TransactionEditRow({
                 {updateState.message}
               </p>
             ) : null}
-            <div className="flex gap-2">
-              <Button type="submit" disabled={updating} className="flex-1 h-8 text-[12px]">
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={updating} className="h-10 flex-1 text-[12px]">
                 {updating ? "Guardando…" : "Guardar"}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setEditing(false)} className="flex-1 h-8 text-[12px]">
+              <Button type="button" variant="secondary" onClick={() => setEditing(false)} className="h-10 flex-1 text-[12px]">
                 Cancelar
               </Button>
             </div>

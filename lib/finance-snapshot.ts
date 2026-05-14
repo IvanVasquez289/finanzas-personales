@@ -99,6 +99,7 @@ export type FinanceSnapshot = {
     totalInstallments?: number;
   }[];
   transactions: {
+    id: string;
     merchant: string;
     cat: string;
     account: string;
@@ -528,6 +529,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     creditCards,
     payments,
     transactions: transactions.map((transaction) => ({
+      id: transaction.id,
       merchant: transaction.merchantNormalized ?? transaction.description ?? "Movimiento",
       cat: transaction.category?.name ?? "Sin categoría",
       account: transaction.account.name,
