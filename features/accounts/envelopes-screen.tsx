@@ -13,7 +13,7 @@ import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
 
-export function EnvelopesScreen({ data }: { data: FinanceSnapshot }) {
+export function EnvelopesScreen({ data, onManage }: { data: FinanceSnapshot; onManage: () => void }) {
   const total = data.envelopes.reduce((a, s) => a + s.balance, 0) + data.bankAccounts.reduce((a, c) => a + c.balance, 0);
   const savingsTotal = data.envelopes.find((envelope) => envelope.name === "Ahorro")?.balance ?? 0;
   const committedTotal = data.envelopes
@@ -27,7 +27,7 @@ export function EnvelopesScreen({ data }: { data: FinanceSnapshot }) {
       <PageHeader
         eyebrow="Patrimonio"
         title="Tus sobres"
-        right={<Button variant="secondary" size="icon" aria-label="Agregar sobre"><Plus size={18} /></Button>}
+        right={<Button variant="secondary" size="icon" aria-label="Gestionar cuentas y sobres" onClick={onManage}><Plus size={18} /></Button>}
       />
       <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-auto px-4 app-bottom-scroll">
         <Card className="p-[18px]">

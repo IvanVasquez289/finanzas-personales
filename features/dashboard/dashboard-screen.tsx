@@ -20,7 +20,15 @@ import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
 import { signOut } from "@/lib/auth-client";
 
-export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
+export function DashboardScreen({
+  data,
+  onViewCards,
+  onViewTransactions,
+}: {
+  data: FinanceSnapshot;
+  onViewCards: () => void;
+  onViewTransactions: () => void;
+}) {
   const [periodDays, setPeriodDays] = useState(30);
   const libreTotal = data.allocation.libre;
   const libreBalance = data.dashboard.libre;
@@ -179,7 +187,7 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
         ) : null}
 
         <div>
-          <SectionHeader title="Tarjetas · ciclo actual" action="Ver todas →" />
+          <SectionHeader title="Tarjetas · ciclo actual" action="Ver todas →" onAction={onViewCards} />
           <div className="flex flex-col gap-2.5">
             {data.creditCards.map((card) => (
               <MiniCard key={card.issuer} {...card} />
@@ -219,7 +227,7 @@ export function DashboardScreen({ data }: { data: FinanceSnapshot }) {
         </Card>
 
         <div>
-          <SectionHeader title="Movimientos recientes" action="Ver todos →" />
+          <SectionHeader title="Movimientos recientes" action="Ver todos →" onAction={onViewTransactions} />
           <Card className="overflow-hidden">
             {filteredTransactions.map((tx, index) => (
               <TransactionRow key={`${tx.merchant}-${tx.date}`} {...tx} last={index === filteredTransactions.length - 1} />

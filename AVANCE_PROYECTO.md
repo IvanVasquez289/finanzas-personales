@@ -59,11 +59,15 @@ Estado importante:
 - [x] Registrar MSI como `InstallmentPlan`.
 - [x] Permitir pagos parciales y cierre formal de ciclos.
 - [x] Capturar ingreso y fecha de recepción desde distribución.
-- [x] Agregar plantillas editables para distribución de quincena.
+- [x] Agregar sugerencia clara para distribución de quincena.
 - [x] Derivar saldos desde allocations, transacciones, pagos y ajustes auditables.
 - [x] Extraer cálculos de dashboard a servicios puros.
 - [x] Agregar alertas por presupuesto y filtros por periodo.
 - [x] Implementar configuración MVP para cuentas, tarjetas, categorías, metas y presupuestos.
+- [x] Rediseñar configuración como pantallas secundarias contextuales, sin saturar la navegación principal.
+- [x] Agregar pantalla offline mínima y actualizar service worker a `finanzas-pwa-v3`.
+- [x] Agregar detalle completo de movimientos con filtros y búsqueda.
+- [x] Mostrar movimientos del ciclo dentro del detalle de tarjeta.
 
 #### Parcial
 
@@ -72,7 +76,7 @@ Estado importante:
 #### Pendiente
 
 - [ ] Configuración inicial/onboarding.
-- [ ] Detalle completo de movimientos.
+- [x] Detalle completo de movimientos.
 - [ ] Reportes mensuales y por ciclo.
 - [ ] Calendario de pagos.
 - [ ] Importación por captura, OCR y PDF.
@@ -307,7 +311,7 @@ Incluye:
 Pendiente:
 
 - Formulario real con React Hook Form y Zod.
-- Plantillas de distribución editables.
+- Sugerencia clara de distribución y ajuste manual.
 
 Implementado:
 

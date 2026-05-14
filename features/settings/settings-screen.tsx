@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Settings, SlidersHorizontal, Tags, Target, WalletCards } from "lucide-react";
+import { ArrowLeft, SlidersHorizontal, Tags, Target, WalletCards } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,9 @@ import {
   createCategoryAction,
   createCreditCardAction,
   createGoalAction,
-  createTemplateAction,
   deactivateAccountAction,
   deleteBudgetAction,
   deleteCategoryAction,
-  deleteTemplateAction,
   initialSettingsState,
   updateAccountAction,
   updateCategoryAction,
@@ -27,7 +25,15 @@ import {
   updateGoalAction,
 } from "./actions";
 
-export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
+export function SettingsScreen({
+  data,
+  section,
+  onBack,
+}: {
+  data: FinanceSnapshot;
+  section: "accounts" | "cards" | "plan";
+  onBack: () => void;
+}) {
   const [accountState, createAccount, accountPending] = useActionState(createAccountAction, initialSettingsState);
   const [updateAccountState, updateAccount, updateAccountPending] = useActionState(updateAccountAction, initialSettingsState);
   const [deactivateState, deactivateAccount, deactivatePending] = useActionState(deactivateAccountAction, initialSettingsState);
@@ -41,59 +47,29 @@ export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
   const [updateGoalState, updateGoal, updateGoalPending] = useActionState(updateGoalAction, initialSettingsState);
   const [budgetState, createBudget, budgetPending] = useActionState(createBudgetAction, initialSettingsState);
   const [deleteBudgetState, deleteBudget, deleteBudgetPending] = useActionState(deleteBudgetAction, initialSettingsState);
-  const [templateState, createTemplate, templatePending] = useActionState(createTemplateAction, initialSettingsState);
-  const [deleteTemplateState, deleteTemplate, deleteTemplatePending] = useActionState(deleteTemplateAction, initialSettingsState);
   const accounts = data.settings.accounts.filter((account) => account.type !== "credit_card" && account.type !== "store_card");
   const cards = data.settings.accounts.filter((account) => account.credit);
   const activeCategories = data.settings.categories;
   const activeAccounts = data.settings.accounts.filter((account) => account.isActive);
+  const title = {
+    accounts: "Cuentas",
+    cards: "Tarjetas",
+    plan: "Meta",
+  }[section];
 
   return (
     <>
       <PageHeader
-        eyebrow="MVP"
-        title="Configuración"
+        eyebrow="Ajustes"
+        title={title}
         right={
-          <div className="grid size-9 place-items-center rounded-full border border-white/[0.06] bg-[#161b25] text-[#a4adbe]">
-            <Settings size={17} />
-          </div>
+          <Button type="button" variant="secondary" size="icon" aria-label="Regresar" onClick={onBack}>
+            <ArrowLeft size={16} />
+          </Button>
         }
       />
       <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-auto px-4 app-bottom-scroll">
-        <section>
-          <SectionHeader title="Plantillas de quincena" />
-          <Card className="p-3.5">
-            <form action={createTemplate} className="grid gap-2">
-              <Input name="name" placeholder="Nombre de plantilla" />
-              <div className="grid grid-cols-4 gap-2">
-                <Input name="pago" type="number" step="0.01" placeholder="Tarjetas" />
-                <Input name="ahorro" type="number" step="0.01" placeholder="Ahorro" />
-                <Input name="fijos" type="number" step="0.01" placeholder="Fijos" />
-                <Input name="libre" type="number" step="0.01" placeholder="Libre" />
-              </div>
-              <Button disabled={templatePending}>Guardar plantilla</Button>
-              <StateMessage state={templateState} />
-            </form>
-          </Card>
-          <Card className="mt-2 overflow-hidden">
-            {data.settings.templates.map((template, index) => (
-              <div key={template.id} className={`flex items-center gap-3 px-4 py-3 ${index === data.settings.templates.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-medium">{template.name}</div>
-                  <div className="mt-0.5 text-[11px] text-[#6a7384]">
-                    {money(template.pago)} · {money(template.ahorro)} · {money(template.fijos)} · {money(template.libre)}
-                  </div>
-                </div>
-                <form action={deleteTemplate}>
-                  <input type="hidden" name="id" value={template.id} />
-                  <button className="text-[12px] text-[#F46A6A]" disabled={deleteTemplatePending}>Eliminar</button>
-                </form>
-              </div>
-            ))}
-          </Card>
-          <StateMessage state={deleteTemplateState} />
-        </section>
-
+        {section === "accounts" ? (
         <section>
           <SectionHeader title="Cuentas y sobres" />
           <Card className="p-3.5">
@@ -152,7 +128,9 @@ export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
             <StateMessage state={deactivateState} />
           </div>
         </section>
+        ) : null}
 
+        {section === "cards" ? (
         <section>
           <SectionHeader title="Tarjetas" />
           <Card className="p-3.5">
@@ -199,7 +177,9 @@ export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
             <StateMessage state={updateCardState} />
           </div>
         </section>
+        ) : null}
 
+        {section === "accounts" ? (
         <section>
           <SectionHeader title="Categorías" />
           <Card className="p-3.5">
@@ -231,7 +211,9 @@ export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
             <StateMessage state={deleteCategoryState} />
           </div>
         </section>
+        ) : null}
 
+        {section === "plan" ? (
         <section>
           <SectionHeader title="Metas" />
           <Card className="p-3.5">
@@ -265,7 +247,9 @@ export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
             <StateMessage state={updateGoalState} />
           </div>
         </section>
+        ) : null}
 
+        {section === "accounts" ? (
         <section>
           <SectionHeader title="Presupuestos" />
           <Card className="p-3.5">
@@ -309,6 +293,7 @@ export function SettingsScreen({ data }: { data: FinanceSnapshot }) {
           </Card>
           <StateMessage state={deleteBudgetState} />
         </section>
+        ) : null}
       </div>
     </>
   );

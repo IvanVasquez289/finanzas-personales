@@ -8,6 +8,7 @@ import { BigNum } from "@/components/finance/big-num";
 import { ProgressBar } from "@/components/finance/progress-bar";
 import { Ring } from "@/components/finance/ring";
 import { SectionHeader } from "@/components/finance/section-header";
+import { TransactionRow } from "@/components/transactions/transaction-row";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
@@ -15,7 +16,15 @@ import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
 import { closeCreditCycleAction, registerCardPaymentAction } from "./actions";
 
-export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
+export function CardDetailScreen({
+  data,
+  onBack,
+  onManage,
+}: {
+  data: FinanceSnapshot;
+  onBack: () => void;
+  onManage: () => void;
+}) {
   const router = useRouter();
   const [selectedCard, setSelectedCard] = useState(0);
   const [paymentState, paymentAction, paymentPending] = useActionState(registerCardPaymentAction, {
@@ -39,6 +48,7 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
     cycleLabel: "Sin ciclo abierto",
     paymentDue: "Sin fecha",
     categorySpend: [],
+    transactions: [],
   };
   const pct = card.budget > 0 ? card.used / card.budget : 0;
   const categories = card.categorySpend;
@@ -60,11 +70,11 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
       <div className="flex items-center justify-between">
-        <Button variant="secondary" size="icon" aria-label="Regresar">
+        <Button variant="secondary" size="icon" aria-label="Regresar" onClick={onBack}>
           <ArrowLeft size={16} />
         </Button>
         <div className="text-[14px] text-[#a4adbe]">Tarjeta</div>
-        <Button variant="secondary" size="icon" aria-label="Más opciones">
+        <Button variant="secondary" size="icon" aria-label="Gestionar tarjetas" onClick={onManage}>
           <MoreHorizontal size={18} />
         </Button>
       </div>
@@ -209,6 +219,21 @@ export function CardDetailScreen({ data }: { data: FinanceSnapshot }) {
               last={index === installmentRows.length - 1}
             />
           ))}
+        </Card>
+      </div>
+      <div>
+        <SectionHeader title="Movimientos del ciclo" />
+        <Card className="overflow-hidden">
+          {card.transactions.map((transaction, index) => (
+            <TransactionRow
+              key={transaction.id}
+              {...transaction}
+              last={index === card.transactions.length - 1}
+            />
+          ))}
+          {card.transactions.length === 0 ? (
+            <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">Sin movimientos registrados en este ciclo.</div>
+          ) : null}
         </Card>
       </div>
     </div>

@@ -430,63 +430,6 @@ export async function createBudgetAction(
   return { ok: true, message: "Presupuesto creado." };
 }
 
-export async function createTemplateAction(
-  _state: SettingsActionState,
-  formData: FormData,
-): Promise<SettingsActionState> {
-  const parsed = z.object({
-    name: z.string().trim().min(1),
-    pago: moneySchema,
-    ahorro: moneySchema,
-    fijos: moneySchema,
-    libre: moneySchema,
-  }).safeParse({
-    name: formData.get("name"),
-    pago: formData.get("pago") || 0,
-    ahorro: formData.get("ahorro") || 0,
-    fijos: formData.get("fijos") || 0,
-    libre: formData.get("libre") || 0,
-  });
-  if (!parsed.success) return error("Revisa la plantilla.");
-  const user = await getCurrentFinanceUser();
-  if (!user) return error("Inicia sesión.");
-
-  await prisma.distributionTemplate.upsert({
-    where: { userId_name: { userId: user.id, name: parsed.data.name } },
-    update: {
-      pagoTarjetasCents: toCents(parsed.data.pago),
-      ahorroCents: toCents(parsed.data.ahorro),
-      fijosCents: toCents(parsed.data.fijos),
-      libreCents: toCents(parsed.data.libre),
-    },
-    create: {
-      userId: user.id,
-      name: parsed.data.name,
-      pagoTarjetasCents: toCents(parsed.data.pago),
-      ahorroCents: toCents(parsed.data.ahorro),
-      fijosCents: toCents(parsed.data.fijos),
-      libreCents: toCents(parsed.data.libre),
-    },
-  });
-
-  revalidatePath("/");
-  return { ok: true, message: "Plantilla guardada." };
-}
-
-export async function deleteTemplateAction(
-  _state: SettingsActionState,
-  formData: FormData,
-): Promise<SettingsActionState> {
-  const parsed = z.object({ id: z.string().min(1) }).safeParse({ id: formData.get("id") });
-  if (!parsed.success) return error("Selecciona una plantilla.");
-  const user = await getCurrentFinanceUser();
-  if (!user) return error("Inicia sesión.");
-
-  await prisma.distributionTemplate.delete({ where: { id: parsed.data.id, userId: user.id } });
-  revalidatePath("/");
-  return { ok: true, message: "Plantilla eliminada." };
-}
-
 export async function deleteBudgetAction(
   _state: SettingsActionState,
   formData: FormData,

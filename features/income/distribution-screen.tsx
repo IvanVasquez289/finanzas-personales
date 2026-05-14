@@ -19,10 +19,12 @@ export function DistributionScreen({
   data,
   onBack,
   onSaved,
+  onManageGoal,
 }: {
   data: FinanceSnapshot;
   onBack: () => void;
   onSaved: () => void;
+  onManageGoal: () => void;
 }) {
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -45,11 +47,19 @@ export function DistributionScreen({
   });
   const total = vals.pago + vals.ahorro + vals.fijos + vals.libre;
   const diff = ingreso - total;
+  const applySuggestion = () => {
+    const pago = Math.min(2500, ingreso);
+    const ahorro = Math.min(3000, Math.max(0, ingreso - pago));
+    const fijos = Math.min(1000, Math.max(0, ingreso - pago - ahorro));
+    const libre = Math.max(0, ingreso - pago - ahorro - fijos);
+
+    setVals({ pago, ahorro, fijos, libre });
+  };
   const sobres = [
-    { key: "pago" as const, name: "Pago tarjetas", sugerido: 2500, color: FT.accent, note: "Cubre BBVA + Liverpool + MSI", icon: CreditCard },
-    { key: "ahorro" as const, name: "Ahorro", sugerido: 2500, color: FT.pos, note: "Meta MacBook · $48,000", icon: PiggyBank },
-    { key: "fijos" as const, name: "Fijos", sugerido: 950, color: "#8B6CF0", note: "MacBook $1,400 · Internet $500", icon: CalendarDays },
-    { key: "libre" as const, name: "Libre", sugerido: 3300, color: FT.warn, note: "Gastos variables · 14 días", icon: WalletCards },
+    { key: "pago" as const, name: "Pago tarjetas", sugerido: Math.min(2500, ingreso), color: FT.accent, note: "Cubre tarjetas y MSI", icon: CreditCard },
+    { key: "ahorro" as const, name: "Ahorro", sugerido: Math.min(3000, Math.max(0, ingreso - 2500)), color: FT.pos, note: "Meta $48,000", icon: PiggyBank },
+    { key: "fijos" as const, name: "Fijos", sugerido: Math.min(1000, Math.max(0, ingreso - 5500)), color: "#8B6CF0", note: "Pagos obligatorios del periodo", icon: CalendarDays },
+    { key: "libre" as const, name: "Libre", sugerido: Math.max(0, ingreso - 6500), color: FT.warn, note: "Gastos variables del periodo", icon: WalletCards },
   ];
 
   useEffect(() => {
@@ -68,7 +78,7 @@ export function DistributionScreen({
       <div className="flex items-center justify-between px-4 pb-4">
         <Button type="button" variant="secondary" size="icon" aria-label="Regresar" onClick={onBack}><ArrowLeft size={16} /></Button>
         <div className="text-[14px] text-[#a4adbe]">Paso 2 de 3</div>
-        <button type="button" className="text-[13px] font-medium text-[#2A5BFF]">Sugerencia</button>
+        <button type="button" className="text-[13px] font-medium text-[#2A5BFF]" onClick={onManageGoal}>Meta</button>
       </div>
       <div className="px-5 pb-2">
         <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Quincena recibida</div>
@@ -97,25 +107,13 @@ export function DistributionScreen({
           </label>
         </div>
         <div className="mt-1.5 text-[13px] text-[#a4adbe]">¿Cómo lo repartimos hoy?</div>
-        {data.income.templates.length > 0 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {data.income.templates.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                onClick={() => setVals({
-                  pago: template.pago,
-                  ahorro: template.ahorro,
-                  fijos: template.fijos,
-                  libre: template.libre,
-                })}
-                className="shrink-0 rounded-full border border-white/[0.08] bg-[#10141d] px-3 py-2 text-[12px] font-medium text-[#a4adbe]"
-              >
-                {template.name}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <button
+          type="button"
+          className="mt-3 h-9 rounded-xl border border-[#2A5BFF55] bg-[#2A5BFF1f] px-3 text-[13px] font-semibold text-[#2A5BFF]"
+          onClick={applySuggestion}
+        >
+          Usar sugerencia
+        </button>
       </div>
       <div className="px-4 py-3">
         <Card className="p-3.5">

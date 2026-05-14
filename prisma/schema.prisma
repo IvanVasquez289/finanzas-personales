@@ -95,28 +95,11 @@ model User {
   accounts         Account[]
   categories       Category[]
   incomeEvents     IncomeEvent[]
-  distributionTemplates DistributionTemplate[]
   transactions     Transaction[]
   budgets          Budget[]
   goals            Goal[]
   installmentPlans InstallmentPlan[]
   importBatches    ImportBatch[]
-}
-
-model DistributionTemplate {
-  id                String   @id @default(cuid())
-  userId            String
-  name              String
-  pagoTarjetasCents Int      @default(0)
-  ahorroCents       Int      @default(0)
-  fijosCents        Int      @default(0)
-  libreCents        Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, name])
-  @@index([userId])
 }
 
 model AuthUser {

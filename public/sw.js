@@ -1,5 +1,5 @@
-const CACHE_NAME = "finanzas-pwa-v2";
-const APP_SHELL = ["/manifest.webmanifest", "/icon.svg"];
+const CACHE_NAME = "finanzas-pwa-v3";
+const APP_SHELL = ["/manifest.webmanifest", "/icon.svg", "/offline"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -28,7 +28,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           return response;
         })
-        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/"))),
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/offline"))),
     );
     return;
   }

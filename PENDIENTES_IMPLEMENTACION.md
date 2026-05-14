@@ -24,7 +24,7 @@ Estas tareas afectan directamente si la app sirve para registrar el día y enten
    - [x] Primera server action implementada.
    - [x] Capturar nuevo ingreso desde la pantalla.
    - [x] Fecha de recepción.
-   - [x] Plantillas editables.
+   - [x] Sugerencia de distribución y ajuste manual.
    - [x] React Hook Form.
 4. [x] Saldos confiables de sobres/cuentas.
    - [x] Pantalla maquetada.
@@ -56,20 +56,24 @@ Estas tareas permiten dejar de depender del seed y adaptar la app a cambios real
 
 Estas tareas hacen que la información deje de estar resumida solamente en cards.
 
-1. [ ] Detalle completo de movimientos.
-2. [ ] Detalle de movimientos por tarjeta/ciclo.
+1. [x] Detalle completo de movimientos.
+2. [x] Detalle de movimientos por tarjeta/ciclo.
 3. [ ] Calendario de pagos.
 4. [ ] Reportes básicos mensuales.
 5. [ ] Reportes por ciclo de tarjeta.
 6. [ ] Acciones reales para links tipo “Ver todas”, “Calendario” y “Reordenar”.
+   - [x] “Ver todos” de movimientos.
+   - [x] “Ver todas” de tarjetas.
+   - [ ] “Calendario”.
+   - [ ] “Reordenar”.
 
 ## Prioridad 4 - Seguridad y operación
 
 Estas tareas son importantes antes de usar la app como sistema estable.
 
-1. [ ] Autenticación simple.
+1. [x] Autenticación simple.
    - [x] Integración con Better Auth en código.
-   - [ ] Migración de Auth pendiente de aplicar en Supabase.
+   - [x] Migración de Auth aplicada en Supabase.
 2. [ ] Configuración inicial/onboarding.
 3. [ ] Usuario dedicado para Prisma en Supabase en vez de `postgres`.
 4. [x] Revisar permisos de Data API con RLS y revokes.
@@ -99,13 +103,16 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 - [x] Calcular dinero comprometido con reglas completas.
 - [x] Agregar alertas reales por presupuesto y exceso de gasto.
 - [ ] Conectar acciones de “Ver todas”, calendario y detalle de movimientos.
+  - [x] Movimientos.
+  - [x] Tarjetas.
+  - [ ] Calendario.
 - [x] Agregar filtros por periodo real.
 
 ### Tarjetas
 
 - [x] Registrar pagos parciales editables.
 - [x] Cerrar ciclos y conservar histórico.
-- [ ] Mostrar detalle completo de movimientos por tarjeta.
+- [x] Mostrar detalle completo de movimientos por tarjeta.
 - [x] Filtrar gasto por categoría por tarjeta/ciclo seleccionado.
 - [x] Filtrar MSI por tarjeta seleccionada.
 - [x] Calcular timeline de ciclo con fechas reales.
@@ -122,7 +129,7 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 ### Distribución de quincena
 
 - [x] Convertir UI a React Hook Form.
-- [x] Crear plantillas de distribución editables.
+- [x] Agregar sugerencia de distribución clara.
 - [x] Permitir capturar un nuevo monto de ingreso desde la pantalla.
 - [x] Permitir elegir fecha de recepción.
 - [x] Evitar distribuir contra un ingreso viejo cuando no exista ingreso del periodo actual.
@@ -140,8 +147,8 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 ### PWA
 
 - [ ] Revisar instalación en iOS y Android.
-- [ ] Agregar pantalla offline mínima.
-- [ ] Versionar service worker en cada cambio relevante.
+- [x] Agregar pantalla offline mínima.
+- [x] Versionar service worker en cada cambio relevante.
 - [ ] Revisar estrategia de cache para assets estáticos y datos dinámicos.
 
 ## Pantallas no maquetadas todavía
@@ -150,10 +157,10 @@ Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 - [ ] Configuración inicial/onboarding.
 - [ ] Alta/edición de cuentas.
 - [ ] Alta/edición de tarjetas.
-- [ ] Configuración de corte y fecha límite de pago.
+- [x] Configuración de corte y fecha límite de pago.
 - [ ] Alta/edición de categorías.
 - [ ] Alta/edición de presupuestos.
-- [ ] Detalle completo de movimientos.
+- [x] Detalle completo de movimientos.
 - [ ] Reportes mensuales.
 - [ ] Reportes por ciclo.
 - [ ] Calendario de pagos.

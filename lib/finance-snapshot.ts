@@ -11,14 +11,6 @@ export type FinanceSnapshot = {
     amount: number;
     periodLabel: string;
     receivedAt: string;
-    templates: {
-      id: string;
-      name: string;
-      pago: number;
-      ahorro: number;
-      fijos: number;
-      libre: number;
-    }[];
   };
   allocation: {
     pagoTarjetas: number;
@@ -77,6 +69,7 @@ export type FinanceSnapshot = {
       value: number;
       color: string;
     }[];
+    transactions: FinanceTransaction[];
   }[];
   payments: {
     accountId?: string;
@@ -97,6 +90,7 @@ export type FinanceSnapshot = {
     dateIso: string;
     income?: boolean;
   }[];
+  movementDetail: FinanceTransaction[];
   expenseForm: {
     categories: {
       id: string;
@@ -146,15 +140,26 @@ export type FinanceSnapshot = {
       periodStart: string;
       periodEnd: string;
     }[];
-    templates: {
-      id: string;
-      name: string;
-      pago: number;
-      ahorro: number;
-      fijos: number;
-      libre: number;
-    }[];
   };
+};
+
+export type FinanceTransaction = {
+  id: string;
+  merchant: string;
+  cat: string;
+  account: string;
+  accountId: string;
+  accountType: string;
+  amount: number;
+  date: string;
+  dateIso: string;
+  direction: "income" | "expense" | "transfer";
+  paymentMethod: string;
+  source: string;
+  status: string;
+  cycleId?: string;
+  cycleLabel?: string;
+  income?: boolean;
 };
 
 const MX_DATE = new Intl.DateTimeFormat("es-MX", {
@@ -226,7 +231,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     return emptySnapshot();
   }
 
-  const [latestIncome, accounts, allAccounts, goals, creditAccounts, transactions, allTransactions, allocations, installmentPlans, budgets, categories, templates] = await Promise.all([
+  const [latestIncome, accounts, allAccounts, goals, creditAccounts, transactions, movementTransactions, allTransactions, allocations, installmentPlans, budgets, categories] = await Promise.all([
     prisma.incomeEvent.findFirst({
       where: { userId: user.id },
       orderBy: { receivedAt: "desc" },
@@ -273,6 +278,16 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     }),
     prisma.transaction.findMany({
       where: { userId: user.id, status: "confirmed" },
+      orderBy: { date: "desc" },
+      take: 200,
+      include: {
+        account: true,
+        category: true,
+        creditCardCycle: true,
+      },
+    }),
+    prisma.transaction.findMany({
+      where: { userId: user.id, status: "confirmed" },
     }),
     prisma.allocation.findMany({
       where: { incomeEvent: { userId: user.id } },
@@ -288,10 +303,6 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       include: { category: true, account: true },
     }),
     prisma.category.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.distributionTemplate.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "asc" },
     }),
@@ -353,6 +364,26 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         return acc;
       }, {}),
     );
+    const cycleTransactions = (cycle?.transactions ?? [])
+      .slice()
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .map((transaction) => ({
+        id: transaction.id,
+        merchant: transaction.merchantNormalized ?? transaction.description ?? "Movimiento",
+        cat: transaction.category?.name ?? "Sin categoría",
+        account: credit.account.name,
+        accountId: credit.accountId,
+        accountType: credit.account.type,
+        amount: -toAmount(transaction.amountCents),
+        date: formatShortDate(transaction.date),
+        dateIso: transaction.date.toISOString(),
+        direction: transaction.direction,
+        paymentMethod: transaction.paymentMethod,
+        source: transaction.source,
+        status: transaction.status,
+        cycleId: cycle?.id,
+        cycleLabel: cycle ? formatCycle(cycle.startDate, cycle.endDate) : undefined,
+      }));
 
     return {
       issuer: credit.account.name,
@@ -368,6 +399,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       cycleLabel: cycle ? formatCycle(cycle.startDate, cycle.endDate) : "Sin ciclo abierto",
       paymentDue: cycle ? formatShortDate(cycle.paymentDueDate) : "Sin fecha",
       categorySpend,
+      transactions: cycleTransactions,
     };
   });
 
@@ -411,14 +443,6 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       amount: toAmount(latestIncome?.amountCents),
       periodLabel: latestIncome ? `Quincena · ${formatShortDate(latestIncome.receivedAt)}` : "Sin ingreso registrado",
       receivedAt: latestIncome?.receivedAt.toISOString() ?? "",
-      templates: templates.map((template) => ({
-        id: template.id,
-        name: template.name,
-        pago: toAmount(template.pagoTarjetasCents),
-        ahorro: toAmount(template.ahorroCents),
-        fijos: toAmount(template.fijosCents),
-        libre: toAmount(template.libreCents),
-      })),
     },
     allocation,
     dashboard: {
@@ -466,6 +490,26 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       amount: transaction.direction === "expense" ? -toAmount(transaction.amountCents) : toAmount(transaction.amountCents),
       date: formatShortDate(transaction.date),
       dateIso: transaction.date.toISOString(),
+      income: transaction.direction === "income",
+    })),
+    movementDetail: movementTransactions.map((transaction) => ({
+      id: transaction.id,
+      merchant: transaction.merchantNormalized ?? transaction.description ?? "Movimiento",
+      cat: transaction.category?.name ?? "Sin categoría",
+      account: transaction.account.name,
+      accountId: transaction.accountId,
+      accountType: transaction.account.type,
+      amount: transaction.direction === "expense" ? -toAmount(transaction.amountCents) : toAmount(transaction.amountCents),
+      date: formatShortDate(transaction.date),
+      dateIso: transaction.date.toISOString(),
+      direction: transaction.direction,
+      paymentMethod: transaction.paymentMethod,
+      source: transaction.source,
+      status: transaction.status,
+      cycleId: transaction.creditCardCycleId ?? undefined,
+      cycleLabel: transaction.creditCardCycle
+        ? formatCycle(transaction.creditCardCycle.startDate, transaction.creditCardCycle.endDate)
+        : undefined,
       income: transaction.direction === "income",
     })),
     expenseForm: {
@@ -525,14 +569,6 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         periodStart: budget.periodStart.toISOString().slice(0, 10),
         periodEnd: budget.periodEnd.toISOString().slice(0, 10),
       })),
-      templates: templates.map((template) => ({
-        id: template.id,
-        name: template.name,
-        pago: toAmount(template.pagoTarjetasCents),
-        ahorro: toAmount(template.ahorroCents),
-        fijos: toAmount(template.fijosCents),
-        libre: toAmount(template.libreCents),
-      })),
     },
   };
 }
@@ -557,7 +593,7 @@ function toCurrency(amount: number) {
 function emptySnapshot(): FinanceSnapshot {
   return {
     user: { name: "Iván", initials: "IV" },
-    income: { amount: 0, periodLabel: "Sin datos", receivedAt: "", templates: [] },
+    income: { amount: 0, periodLabel: "Sin datos", receivedAt: "" },
     allocation: { pagoTarjetas: 0, ahorro: 0, fijos: 0, libre: 0 },
     dashboard: { libre: 0, committed: 0, alerts: [] },
     goals: {
@@ -574,6 +610,7 @@ function emptySnapshot(): FinanceSnapshot {
     creditCards: [],
     payments: [],
     transactions: [],
+    movementDetail: [],
     expenseForm: {
       categories: [],
       accounts: [],
@@ -583,7 +620,6 @@ function emptySnapshot(): FinanceSnapshot {
       categories: [],
       goals: [],
       budgets: [],
-      templates: [],
     },
   };
 }
