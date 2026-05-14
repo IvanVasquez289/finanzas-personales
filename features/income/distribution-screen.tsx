@@ -119,6 +119,14 @@ export function DistributionScreen({
             />
           </label>
         </div>
+        {data.previousIncome ? (
+          <div className="mt-1.5 text-[11px] text-[#6a7384]">
+            Quincena anterior:{" "}
+            <span className="font-mono text-[#a4adbe]">{money(data.previousIncome.amount)}</span>
+            {" · "}
+            {new Date(data.previousIncome.receivedAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", timeZone: "America/Mexico_City" }).replace(".", "")}
+          </div>
+        ) : null}
         <div className="mt-1.5 text-[13px] text-[#a4adbe]">¿Cómo lo repartimos hoy?</div>
         <button
           type="button"

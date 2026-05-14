@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowLeft, CreditCard, Search } from "lucide-react";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CreditCard, Pencil, Search, Trash2 } from "lucide-react";
 import { SectionHeader } from "@/components/finance/section-header";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { FinanceSnapshot } from "@/lib/finance-snapshot";
+import type { FinanceSnapshot, FinanceTransaction } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
+import { updateTransactionAction, deleteTransactionAction } from "./actions";
 
 type MovementMode = "all" | "expense" | "income" | "cards";
 type PeriodMode = "30" | "90" | "all";
@@ -120,22 +121,126 @@ export function TransactionsScreen({ data, onBack }: { data: FinanceSnapshot; on
         <SectionHeader title={`${filtered.length} movimientos`} />
         <Card className="overflow-hidden">
           {filtered.map((transaction, index) => (
-            <div key={transaction.id}>
-              <TransactionRow {...transaction} last />
-              <div className={`px-4 pb-3 pl-[60px] ${index === filtered.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
-                <div className="flex flex-wrap gap-1.5">
-                  <DetailChip label={transaction.paymentMethod.replace("_", " ")} />
-                  <DetailChip label={transaction.source} />
-                  {transaction.cycleLabel ? <DetailChip label={transaction.cycleLabel} /> : null}
-                </div>
-              </div>
-            </div>
+            <TransactionEditRow
+              key={transaction.id}
+              transaction={transaction}
+              categories={data.expenseForm.categories}
+              last={index === filtered.length - 1}
+            />
           ))}
           {filtered.length === 0 ? (
             <div className="px-4 py-8 text-center text-[13px] text-[#6a7384]">Sin movimientos con esos filtros.</div>
           ) : null}
         </Card>
       </div>
+    </div>
+  );
+}
+
+function TransactionEditRow({
+  transaction,
+  categories,
+  last,
+}: {
+  transaction: FinanceTransaction;
+  categories: { id: string; label: string; color: string }[];
+  last: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [updateState, updateAction, updating] = useActionState(updateTransactionAction, { ok: false, message: "" });
+  const [deleteState, deleteAction, deleting] = useActionState(deleteTransactionAction, { ok: false, message: "" });
+
+  useEffect(() => {
+    if (updateState.ok) setEditing(false);
+  }, [updateState.ok]);
+
+  return (
+    <div>
+      <TransactionRow {...transaction} last />
+      <div className={`px-4 pb-3 pl-[60px] ${last ? "" : editing ? "" : "border-b border-white/[0.06]"}`}>
+        {editing ? (
+          <form action={updateAction} className="grid gap-2 pt-1">
+            <input type="hidden" name="transactionId" value={transaction.id} />
+            <input
+              name="merchant"
+              defaultValue={transaction.merchant}
+              required
+              className="h-9 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              placeholder="Comercio"
+            />
+            <select
+              name="categoryId"
+              defaultValue={transaction.categoryId ?? ""}
+              className="h-9 w-full rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+            >
+              <option value="">Sin categoría</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                name="amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                defaultValue={Math.abs(transaction.amount)}
+                required
+                className="h-9 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-right font-mono text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              />
+              <input
+                name="date"
+                type="date"
+                defaultValue={transaction.dateIso.slice(0, 10)}
+                required
+                className="h-9 rounded-xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+              />
+            </div>
+            {updateState.message ? (
+              <p className="text-[11px]" style={{ color: updateState.ok ? FT.pos : FT.danger }}>
+                {updateState.message}
+              </p>
+            ) : null}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={updating} className="flex-1 h-8 text-[12px]">
+                {updating ? "Guardando…" : "Guardar"}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setEditing(false)} className="flex-1 h-8 text-[12px]">
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <DetailChip label={transaction.paymentMethod.replace("_", " ")} />
+            <DetailChip label={transaction.source} />
+            {transaction.cycleLabel ? <DetailChip label={transaction.cycleLabel} /> : null}
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1 rounded-full bg-white/[0.05] px-2 py-1 text-[10px] text-[#a4adbe] transition-colors hover:bg-white/[0.09]"
+            >
+              <Pencil size={9} />
+              Editar
+            </button>
+            <form action={deleteAction}>
+              <input type="hidden" name="transactionId" value={transaction.id} />
+              <button
+                type="submit"
+                disabled={deleting}
+                className="flex items-center gap-1 rounded-full bg-white/[0.05] px-2 py-1 text-[10px] text-[#E94B6A] transition-colors hover:bg-[#E94B6A]/10"
+              >
+                <Trash2 size={9} />
+                {deleting ? "…" : "Eliminar"}
+              </button>
+            </form>
+            {deleteState.message && !deleteState.ok ? (
+              <span className="text-[10px] text-red-400">{deleteState.message}</span>
+            ) : null}
+          </div>
+        )}
+      </div>
+      {!last && editing ? <div className="border-b border-white/[0.06]" /> : null}
     </div>
   );
 }

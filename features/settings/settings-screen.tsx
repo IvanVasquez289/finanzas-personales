@@ -3,13 +3,17 @@
 import { useActionState, useEffect, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Pencil, Plus, SlidersHorizontal, Tags, Target, Trash2, WalletCards, X } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
+import { ProgressBar } from "@/components/finance/progress-bar";
 import { SectionHeader } from "@/components/finance/section-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
+import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
 import {
   adjustAccountBalanceAction,
+  advanceInstallmentAction,
+  cancelInstallmentAction,
   createAccountAction,
   createBudgetAction,
   createCategoryAction,
@@ -425,6 +429,28 @@ export function SettingsScreen({
           </section>
         ) : null}
 
+        {/* ── PLANES MSI ── */}
+        {section === "cards" ? (
+          <section>
+            <SectionHeader title="Planes MSI activos" />
+            <Card className="overflow-hidden">
+              {data.settings.installmentPlans.length === 0 ? (
+                <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                  Sin planes MSI activos.
+                </div>
+              ) : (
+                data.settings.installmentPlans.map((plan, index) => (
+                  <InstallmentPlanRow
+                    key={plan.id}
+                    plan={plan}
+                    last={index === data.settings.installmentPlans.length - 1}
+                  />
+                ))
+              )}
+            </Card>
+          </section>
+        ) : null}
+
         {/* ── METAS ── */}
         {section === "plan" ? (
           <section>
@@ -522,6 +548,65 @@ export function SettingsScreen({
         </section>
       </div>
     </>
+  );
+}
+
+function InstallmentPlanRow({
+  plan,
+  last,
+}: {
+  plan: FinanceSnapshot["settings"]["installmentPlans"][number];
+  last: boolean;
+}) {
+  const [advanceState, advanceAction, advancing] = useActionState(advanceInstallmentAction, { ok: false, message: "" });
+  const [cancelState, cancelAction, cancelling] = useActionState(cancelInstallmentAction, { ok: false, message: "" });
+  const pct = plan.total > 0 ? Math.round((plan.current / plan.total) * 100) : 0;
+
+  return (
+    <div className={`px-4 py-3.5 ${last ? "" : "border-b border-white/[0.06]"}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-[14px] font-semibold">{plan.merchant}</div>
+          <div className="mt-0.5 text-[11px] text-[#6a7384]">
+            {plan.accountName} · {money(plan.monthly)}/mes · mensualidad {plan.current} de {plan.total}
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="font-mono text-[12px] text-[#a4adbe]">{money(plan.original)}</div>
+          <div className="text-[10px] text-[#6a7384]">original</div>
+        </div>
+      </div>
+      <div className="mt-2">
+        <ProgressBar pct={pct} color={FT.warn} height={4} />
+      </div>
+      <div className="mt-2.5 flex items-center gap-2">
+        <form action={advanceAction}>
+          <input type="hidden" name="planId" value={plan.id} />
+          <button
+            type="submit"
+            disabled={advancing}
+            className="rounded-xl border border-[#2A5BFF]/30 bg-[#2A5BFF]/10 px-3 py-1.5 text-[12px] font-medium text-[#2A5BFF]"
+          >
+            {advancing ? "…" : plan.current >= plan.total ? "Marcar completado" : "Avanzar mensualidad"}
+          </button>
+        </form>
+        <form action={cancelAction}>
+          <input type="hidden" name="planId" value={plan.id} />
+          <button
+            type="submit"
+            disabled={cancelling}
+            className="rounded-xl border border-white/[0.08] px-3 py-1.5 text-[12px] text-[#F46A6A]/70"
+          >
+            {cancelling ? "…" : "Cancelar plan"}
+          </button>
+        </form>
+      </div>
+      {(advanceState.message || cancelState.message) ? (
+        <div className="mt-1.5 text-[11px]" style={{ color: (advanceState.ok || cancelState.ok) ? FT.pos : FT.danger }}>
+          {advanceState.message || cancelState.message}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

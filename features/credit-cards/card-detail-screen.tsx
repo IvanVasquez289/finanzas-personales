@@ -53,6 +53,12 @@ export function CardDetailScreen({
   };
   const pct = card.budget > 0 ? card.used / card.budget : 0;
   const categories = card.categorySpend;
+  const today = new Date();
+  const cycleStart = card.cycleStartDate ? new Date(card.cycleStartDate) : null;
+  const cycleEnd = new Date(today.getTime() + card.daysToClose * 86_400_000);
+  const cycleTotalDays = cycleStart ? (cycleEnd.getTime() - cycleStart.getTime()) / 86_400_000 : 30;
+  const cycleElapsedDays = cycleStart ? (today.getTime() - cycleStart.getTime()) / 86_400_000 : 0;
+  const cyclePct = cycleTotalDays > 0 ? Math.round((cycleElapsedDays / cycleTotalDays) * 100) : 0;
   const installmentRows = data.payments.filter(
     (payment) => (payment.chip === "MSI" || payment.chip === "Sobre") && (!payment.accountId || payment.accountId === card.accountId),
   );
@@ -156,7 +162,7 @@ export function CardDetailScreen({
           </Ring>
         </div>
         <div className="mt-[18px]">
-          <ProgressBar pct={(4 / 30) * 100} color={FT.accent} height={2} />
+          <ProgressBar pct={cyclePct} color={FT.accent} height={2} />
           <div className="mt-2 flex justify-between text-[10px] text-[#6a7384]">
             <span>{card.cycleLabel.split(" → ")[0]}<br /><span className="text-[#444c5b]">inicio</span></span>
             <span className="text-center text-[#2A5BFF]">Hoy<br /><span className="opacity-70">actual</span></span>
@@ -235,6 +241,8 @@ export function CardDetailScreen({
               merchant={payment.label}
               monthly={payment.amount}
               sub={payment.sub}
+              current={payment.currentInstallment ?? 0}
+              total={payment.totalInstallments ?? 1}
               last={index === installmentRows.length - 1}
             />
           ))}
@@ -259,7 +267,8 @@ export function CardDetailScreen({
   );
 }
 
-function MsiRow({ merchant, monthly, sub, last }: { merchant: string; monthly: number; sub: string; last?: boolean }) {
+function MsiRow({ merchant, monthly, sub, current, total, last }: { merchant: string; monthly: number; sub: string; current: number; total: number; last?: boolean }) {
+  const msiPct = total > 0 ? Math.round((current / total) * 100) : 0;
   return (
     <div className={`px-4 py-3.5 ${last ? "" : "border-b border-white/[0.06]"}`}>
       <div className="flex items-baseline justify-between">
@@ -268,7 +277,7 @@ function MsiRow({ merchant, monthly, sub, last }: { merchant: string; monthly: n
       </div>
       <div className="mt-2 flex items-center gap-2">
         <div className="flex-1">
-          <ProgressBar pct={60} color={FT.warn} height={4} />
+          <ProgressBar pct={msiPct} color={FT.warn} height={4} />
         </div>
         <div className="text-[11px] text-[#6a7384]">{sub}</div>
       </div>

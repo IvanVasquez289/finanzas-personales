@@ -559,6 +559,63 @@ export async function deleteCreditCardAction(
   return { ok: true, message: "Tarjeta eliminada." };
 }
 
+export async function advanceInstallmentAction(
+  _state: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const planId = formData.get("planId");
+  if (typeof planId !== "string" || !planId) return error("ID inválido.");
+
+  const user = await getCurrentFinanceUser();
+  if (!user) return error("Inicia sesión.");
+
+  const plan = await prisma.installmentPlan.findFirst({
+    where: { id: planId, userId: user.id, status: "active" },
+  });
+  if (!plan) return error("Plan no encontrado.");
+
+  if (plan.currentInstallment >= plan.totalInstallments) {
+    await prisma.installmentPlan.update({
+      where: { id: plan.id },
+      data: { status: "completed" },
+    });
+    revalidatePath("/");
+    return { ok: true, message: "Plan completado." };
+  }
+
+  await prisma.installmentPlan.update({
+    where: { id: plan.id },
+    data: { currentInstallment: { increment: 1 } },
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: `Mensualidad ${plan.currentInstallment + 1} registrada.` };
+}
+
+export async function cancelInstallmentAction(
+  _state: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const planId = formData.get("planId");
+  if (typeof planId !== "string" || !planId) return error("ID inválido.");
+
+  const user = await getCurrentFinanceUser();
+  if (!user) return error("Inicia sesión.");
+
+  const plan = await prisma.installmentPlan.findFirst({
+    where: { id: planId, userId: user.id },
+  });
+  if (!plan) return error("Plan no encontrado.");
+
+  await prisma.installmentPlan.update({
+    where: { id: plan.id },
+    data: { status: "cancelled" },
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "Plan cancelado." };
+}
+
 function toCents(amount: number) {
   return Math.round(amount * 100);
 }

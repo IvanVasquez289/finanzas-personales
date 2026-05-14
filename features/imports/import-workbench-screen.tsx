@@ -30,6 +30,13 @@ const INITIAL_STATE: ImportActionState = { ok: false, message: "" };
 export function ImportWorkbenchScreen({ data, onBack }: { data: FinanceSnapshot; onBack: () => void }) {
   const [tab, setTab] = useState<ImportTab>("capture");
   const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
+  const [activeBatchAccountId, setActiveBatchAccountId] = useState<string | null>(null);
+
+  function handleBatchCreated(id: string, accountId: string) {
+    setActiveBatchId(id);
+    setActiveBatchAccountId(accountId);
+    setTab("review");
+  }
 
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
@@ -62,23 +69,15 @@ export function ImportWorkbenchScreen({ data, onBack }: { data: FinanceSnapshot;
       </div>
 
       {tab === "capture" && (
-        <CapturePanel
-          data={data}
-          source="screenshot"
-          onBatchCreated={(id) => { setActiveBatchId(id); setTab("review"); }}
-        />
+        <CapturePanel data={data} source="screenshot" onBatchCreated={handleBatchCreated} />
       )}
 
       {tab === "review" && (
-        <ReviewPanel data={data} batchId={activeBatchId} />
+        <ReviewPanel data={data} batchId={activeBatchId} accountId={activeBatchAccountId} />
       )}
 
       {tab === "pdf" && (
-        <CapturePanel
-          data={data}
-          source="pdf"
-          onBatchCreated={(id) => { setActiveBatchId(id); setTab("review"); }}
-        />
+        <CapturePanel data={data} source="pdf" onBatchCreated={handleBatchCreated} />
       )}
 
       {tab === "rules" && <RulesPanel data={data} />}
@@ -97,12 +96,15 @@ function CapturePanel({
 }: {
   data: FinanceSnapshot;
   source: "screenshot" | "pdf";
-  onBatchCreated: (batchId: string) => void;
+  onBatchCreated: (batchId: string, accountId: string) => void;
 }) {
+  const allAccounts = data.expenseForm.accounts.map((a) => ({ id: a.id, name: a.label }));
+  const [selectedAccountId, setSelectedAccountId] = useState(allAccounts[0]?.id ?? "");
+
   const [state, action, pending] = useActionState(
     async (prev: ImportActionState, formData: FormData) => {
       const result = await createImportBatchAction(prev, formData);
-      if (result.ok && result.batchId) onBatchCreated(result.batchId);
+      if (result.ok && result.batchId) onBatchCreated(result.batchId, selectedAccountId);
       return result;
     },
     INITIAL_STATE,
@@ -113,8 +115,6 @@ function CapturePanel({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const allAccounts = data.expenseForm.accounts.map((a) => ({ id: a.id, name: a.label }));
 
   const isScreenshot = source === "screenshot";
   const title = isScreenshot ? "Importar por captura" : "Importar por PDF";
@@ -221,6 +221,8 @@ function CapturePanel({
         <select
           name="accountId"
           required
+          value={selectedAccountId}
+          onChange={(e) => setSelectedAccountId(e.target.value)}
           className="h-11 w-full rounded-2xl border border-white/[0.08] bg-[#10141d] px-3 text-[13px] text-white"
         >
           <option value="">Cuenta o tarjeta destino…</option>
@@ -263,7 +265,7 @@ function CapturePanel({
 
 // ─── ReviewPanel ──────────────────────────────────────────────────────────────
 
-function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string | null }) {
+function ReviewPanel({ data, batchId, accountId }: { data: FinanceSnapshot; batchId: string | null; accountId: string | null }) {
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -364,7 +366,7 @@ function ReviewPanel({ data, batchId }: { data: FinanceSnapshot; batchId: string
       {confirmedCount > 0 && (
         <form action={confirmAction} className="grid gap-2">
           <input type="hidden" name="batchId" value={batchId} />
-          <input type="hidden" name="accountId" value={data.expenseForm.accounts[0]?.id ?? ""} />
+          <input type="hidden" name="accountId" value={accountId ?? data.expenseForm.accounts[0]?.id ?? ""} />
           {confirmState.message && (
             <p className={`text-[12px] ${confirmState.ok ? "text-green-400" : "text-red-400"}`}>
               {confirmState.message}

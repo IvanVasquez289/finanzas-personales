@@ -186,6 +186,86 @@ export async function createExpenseAction(
   return { ok: true, message: "Gasto guardado." };
 }
 
+export type TransactionMutationState = { ok: boolean; message: string };
+
+const updateTransactionSchema = z.object({
+  transactionId: z.string().min(1),
+  merchant: z.string().trim().min(1, "Escribe el comercio."),
+  categoryId: z.string().min(1, "Selecciona una categoría."),
+  amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/, "Monto inválido."),
+  date: z.string().min(1, "Selecciona la fecha."),
+});
+
+export async function updateTransactionAction(
+  _prev: TransactionMutationState,
+  formData: FormData,
+): Promise<TransactionMutationState> {
+  const parsed = updateTransactionSchema.safeParse({
+    transactionId: formData.get("transactionId"),
+    merchant: formData.get("merchant"),
+    categoryId: formData.get("categoryId"),
+    amount: formData.get("amount"),
+    date: formData.get("date"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Revisa los datos." };
+  }
+
+  const user = await getCurrentFinanceUser();
+  if (!user) return { ok: false, message: "No autenticado." };
+
+  const tx = await prisma.transaction.findFirst({
+    where: { id: parsed.data.transactionId, userId: user.id },
+  });
+  if (!tx) return { ok: false, message: "Movimiento no encontrado." };
+
+  const amountCents = Math.round(Number(parsed.data.amount) * 100);
+  if (amountCents <= 0) return { ok: false, message: "El monto debe ser mayor a cero." };
+
+  const category = await prisma.category.findFirst({
+    where: { id: parsed.data.categoryId, userId: user.id },
+  });
+  if (!category) return { ok: false, message: "Categoría no encontrada." };
+
+  await prisma.transaction.update({
+    where: { id: tx.id },
+    data: {
+      merchantRaw: parsed.data.merchant,
+      merchantNormalized: normalizeMerchant(parsed.data.merchant),
+      categoryId: category.id,
+      amountCents,
+      date: new Date(parsed.data.date),
+    },
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "Movimiento actualizado." };
+}
+
+export async function deleteTransactionAction(
+  _prev: TransactionMutationState,
+  formData: FormData,
+): Promise<TransactionMutationState> {
+  const transactionId = formData.get("transactionId");
+  if (typeof transactionId !== "string" || !transactionId) {
+    return { ok: false, message: "ID inválido." };
+  }
+
+  const user = await getCurrentFinanceUser();
+  if (!user) return { ok: false, message: "No autenticado." };
+
+  const tx = await prisma.transaction.findFirst({
+    where: { id: transactionId, userId: user.id },
+  });
+  if (!tx) return { ok: false, message: "Movimiento no encontrado." };
+
+  await prisma.transaction.delete({ where: { id: tx.id } });
+
+  revalidatePath("/");
+  return { ok: true, message: "Movimiento eliminado." };
+}
+
 async function findTolerantDuplicate({
   userId,
   accountId,

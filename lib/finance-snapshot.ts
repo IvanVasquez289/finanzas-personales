@@ -59,12 +59,17 @@ export type FinanceSnapshot = {
     sub: string;
     sortOrder: number;
   }[];
+  previousIncome?: {
+    amount: number;
+    receivedAt: string;
+  };
   creditCards: {
     accountId: string;
     cycleId?: string;
     issuer: string;
     dot: string;
     daysToClose: number;
+    cycleStartDate?: string;
     used: number;
     paid: number;
     due: number;
@@ -90,6 +95,8 @@ export type FinanceSnapshot = {
     chip: string;
     chipColor?: string;
     muted?: boolean;
+    currentInstallment?: number;
+    totalInstallments?: number;
   }[];
   transactions: {
     merchant: string;
@@ -151,6 +158,16 @@ export type FinanceSnapshot = {
       periodStart: string;
       periodEnd: string;
     }[];
+    installmentPlans: {
+      id: string;
+      merchant: string;
+      monthly: number;
+      original: number;
+      current: number;
+      total: number;
+      accountId: string;
+      accountName: string;
+    }[];
   };
 };
 
@@ -158,6 +175,7 @@ export type FinanceTransaction = {
   id: string;
   merchant: string;
   cat: string;
+  categoryId?: string;
   account: string;
   accountId: string;
   accountType: string;
@@ -238,10 +256,11 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     return emptySnapshot();
   }
 
-  const [latestIncome, accounts, allAccounts, goals, creditAccounts, transactions, movementTransactions, allTransactions, allocations, installmentPlans, budgets, categories] = await Promise.all([
-    prisma.incomeEvent.findFirst({
+  const [incomeEvents, accounts, allAccounts, goals, creditAccounts, transactions, movementTransactions, allTransactions, allocations, installmentPlans, budgets, categories] = await Promise.all([
+    prisma.incomeEvent.findMany({
       where: { userId: user.id },
       orderBy: { receivedAt: "desc" },
+      take: 24,
       include: {
         allocations: {
           include: { account: true },
@@ -314,6 +333,9 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       orderBy: { createdAt: "asc" },
     }),
   ]);
+  const latestIncome = incomeEvents[0] ?? null;
+  const previousIncomeEvent = incomeEvents[1] ?? null;
+
   const balances = deriveAccountBalances({
     accounts,
     allocations,
@@ -404,6 +426,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       cycleId: cycle?.id,
       dot: cardColor(credit.account.name),
       daysToClose: cycle ? daysUntil(cycle.endDate) : 0,
+      cycleStartDate: cycle?.startDate.toISOString().slice(0, 10),
       used,
       paid: toAmount(cycle?.paidAmountCents),
       due: Math.max(0, used - toAmount(cycle?.paidAmountCents)),
@@ -418,16 +441,22 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
   });
 
   const payments = [
-    ...installmentPlans.slice(0, 3).map((plan) => ({
-      accountId: plan.accountId,
-      label: plan.merchant,
-      sub: `Mensualidad ${plan.currentInstallment} de ${plan.totalInstallments}`,
-      date: formatShortDate(plan.startDate),
-      dateIso: plan.startDate.toISOString(),
-      amount: toAmount(plan.monthlyAmountCents),
-      chip: plan.account.type === "envelope" ? "Sobre" : "MSI",
-      chipColor: plan.account.type === "store_card" ? "#E94B6A" : undefined,
-    })),
+    ...installmentPlans.slice(0, 3).map((plan) => {
+      const nextDate = new Date(plan.startDate);
+      nextDate.setMonth(nextDate.getMonth() + plan.currentInstallment);
+      return {
+        accountId: plan.accountId,
+        label: plan.merchant,
+        sub: `Mensualidad ${plan.currentInstallment} de ${plan.totalInstallments}`,
+        date: formatShortDate(nextDate),
+        dateIso: nextDate.toISOString(),
+        amount: toAmount(plan.monthlyAmountCents),
+        chip: plan.account.type === "envelope" ? "Sobre" : "MSI",
+        chipColor: plan.account.type === "store_card" ? "#E94B6A" : undefined,
+        currentInstallment: plan.currentInstallment,
+        totalInstallments: plan.totalInstallments,
+      };
+    }),
     ...creditCards.map((card) => ({
       label: card.issuer,
       sub: "Pago estimado del ciclo",
@@ -450,6 +479,10 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     transactions: allTransactions,
   });
 
+  const currentSavings = mainGoal
+    ? toAmount(mainGoal.currentAmountCents)
+    : toAmount(savingAccount?.currentBalanceCents);
+
   return {
     user: {
       name: user.name,
@@ -460,6 +493,12 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       periodLabel: latestIncome ? `Quincena · ${formatShortDate(latestIncome.receivedAt)}` : "Sin ingreso registrado",
       receivedAt: latestIncome?.receivedAt.toISOString() ?? "",
     },
+    previousIncome: previousIncomeEvent
+      ? {
+          amount: toAmount(previousIncomeEvent.amountCents),
+          receivedAt: previousIncomeEvent.receivedAt.toISOString(),
+        }
+      : undefined,
     allocation,
     dashboard: {
       libre: toAmount(dashboard.libreCents),
@@ -469,23 +508,10 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     goals: {
       ahorro: {
         name: mainGoal?.name ?? "Meta",
-        currentAmount: mainGoal ? toAmount(mainGoal.currentAmountCents) : toAmount(savingAccount?.currentBalanceCents),
+        currentAmount: currentSavings,
         targetAmount: mainGoal ? toAmount(mainGoal.targetAmountCents) : 0,
         monthlyDelta: savingsAllocation,
-        history: [
-          3500,
-          4200,
-          4800,
-          5100,
-          5300,
-          5500,
-          6200,
-          7400,
-          8200,
-          9100,
-          10100,
-          mainGoal ? toAmount(mainGoal.currentAmountCents) : toAmount(savingAccount?.currentBalanceCents),
-        ],
+        history: buildSavingsHistory(incomeEvents, currentSavings),
       },
     },
     envelopes,
@@ -513,6 +539,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       id: transaction.id,
       merchant: transaction.merchantNormalized ?? transaction.description ?? "Movimiento",
       cat: transaction.category?.name ?? "Sin categoría",
+      categoryId: transaction.categoryId ?? undefined,
       account: transaction.account.name,
       accountId: transaction.accountId,
       accountType: transaction.account.type,
@@ -587,6 +614,16 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         periodStart: budget.periodStart.toISOString().slice(0, 10),
         periodEnd: budget.periodEnd.toISOString().slice(0, 10),
       })),
+      installmentPlans: installmentPlans.map((plan) => ({
+        id: plan.id,
+        merchant: plan.merchant,
+        monthly: toAmount(plan.monthlyAmountCents),
+        original: toAmount(plan.originalAmountCents),
+        current: plan.currentInstallment,
+        total: plan.totalInstallments,
+        accountId: plan.accountId,
+        accountName: plan.account.name,
+      })),
     },
   };
 }
@@ -638,10 +675,31 @@ function emptySnapshot(): FinanceSnapshot {
       categories: [],
       goals: [],
       budgets: [],
+      installmentPlans: [],
     },
   };
 }
 
 function hashText(value: string) {
   return value.split("").reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
+}
+
+function buildSavingsHistory(
+  events: Array<{ receivedAt: Date; allocations: Array<{ amountCents: number; account: { type: string } }> }>,
+  currentBalance: number,
+): number[] {
+  const monthlyMap = new Map<string, number>();
+  for (const event of [...events].reverse()) {
+    const month = event.receivedAt.toISOString().slice(0, 7);
+    const savings = event.allocations
+      .filter((a) => a.account.type === "savings")
+      .reduce((sum, a) => sum + a.amountCents / 100, 0);
+    if (savings > 0) monthlyMap.set(month, (monthlyMap.get(month) ?? 0) + savings);
+  }
+  const months = Array.from(monthlyMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+  if (months.length < 2) return [0, Math.round(currentBalance)];
+  let cumulative = 0;
+  const history = months.map(([, amount]) => { cumulative += amount; return Math.round(cumulative); });
+  history[history.length - 1] = Math.round(currentBalance);
+  return history;
 }
