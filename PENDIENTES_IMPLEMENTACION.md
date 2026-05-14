@@ -79,20 +79,20 @@ Estas tareas son importantes antes de usar la app como sistema estable.
 4. [x] Revisar permisos de Data API con RLS y revokes.
 5. [ ] Revisar permisos de runtime con usuario dedicado.
 6. [ ] Revisar permisos de migraciones con usuario dedicado.
-7. [ ] Pruebas unitarias para servicios de dominio.
+7. [x] Pruebas unitarias para servicios de dominio (`vitest`, 37 tests).
 8. [ ] Pruebas de integración para server actions críticas.
 
 ## Prioridad 5 - Importaciones
 
 Estas tareas reducen captura manual, pero dependen de tener el core sólido.
 
-1. [ ] Importación por captura.
-2. [ ] OCR.
-3. [ ] Pantalla de revisión de OCR.
-4. [ ] Reglas de categorización por comercio.
-5. [ ] Normalización de comercios.
-6. [ ] Importación por PDF.
-7. [ ] Análisis mensual por PDF.
+1. [x] Importación por captura (server action + parsing de texto pegado).
+2. [x] OCR básico (parsing de texto libre con detección de fecha/comercio/monto).
+3. [x] Pantalla de revisión de OCR (ReviewPanel con confirmar/ignorar por item).
+4. [x] Reglas de categorización por comercio (RulesPanel conectado a categorías reales).
+5. [x] Normalización de comercios (normalizeMerchant en actions y transactions).
+6. [x] Importación por PDF (mismo flujo que captura, fuente `pdf`).
+7. [ ] Análisis mensual por PDF (requiere parsear PDF binario; pendiente integrar pdfjs-dist).
 
 ## Pantallas maquetadas con lógica incompleta
 
