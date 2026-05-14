@@ -58,9 +58,11 @@ export function ExpenseFormScreen({
   const recentMerchants = useMemo(() => {
     const seen = new Set<string>();
     return data.movementDetail
+      .filter((transaction) => transaction.direction === "expense" && transaction.source !== "system")
       .map((transaction) => transaction.merchant)
       .filter((item) => {
         const key = item.toLowerCase();
+        if (key === "saldo inicial") return false;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -103,19 +105,19 @@ export function ExpenseFormScreen({
         </button>
       </div>
       <div className="z-10 border-b border-white/[0.06] bg-[#06080c] px-5 pb-3 pt-2 text-center">
-        <div className="mb-1 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Monto</div>
+        <div className="mb-1 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Importe del gasto</div>
         <div className="inline-flex items-baseline justify-center font-mono tabular-nums">
-          <span className="mr-1 text-[24px] text-[#6a7384]">−$</span>
+          <span className="mr-1 text-[24px] text-[#6a7384]">$</span>
           <span className="text-[52px] font-semibold leading-none">{amount.split(".")[0]}</span>
           <span className="text-[28px] font-semibold text-[#a4adbe]">.{amount.split(".")[1] || "00"}</span>
           <span className="ml-1 inline-block h-8 w-0.5 animate-[blink_1s_steps(2)_infinite] bg-[#2A5BFF]" />
         </div>
         <div className="mt-1.5 text-[12px] text-[#6a7384]">Hoy · {merchant || "Sin comercio"}</div>
       </div>
-      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[226px] pt-4">
-        <div className="mt-2">
+      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[238px] pt-4">
+        <div>
           <SectionHeader title="Comercio" />
-          <label className="flex h-12 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#10141d] px-4 text-[#a4adbe] focus-within:border-[#2A5BFF]/60">
+          <label className="flex h-[54px] items-center gap-3 rounded-[18px] border border-white/[0.08] bg-[#10141d] px-4 text-[#a4adbe] focus-within:border-[#2A5BFF]/60">
             <Search size={16} />
             <input
               {...form.register("merchant", { required: true })}
@@ -124,13 +126,13 @@ export function ExpenseFormScreen({
             />
           </label>
           {recentMerchants.length > 0 ? (
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {recentMerchants.map((item) => (
                 <button
                   type="button"
                   key={item}
                   onClick={() => form.setValue("merchant", item)}
-                  className="shrink-0 rounded-full border border-white/[0.08] bg-[#10141d] px-3 py-1.5 text-[12px] text-[#a4adbe]"
+                  className="shrink-0 rounded-full border border-white/[0.08] bg-[#10141d] px-3.5 py-2 text-[12px] text-[#a4adbe]"
                 >
                   {item}
                 </button>
@@ -138,20 +140,20 @@ export function ExpenseFormScreen({
             </div>
           ) : null}
         </div>
-        <div className="mt-2">
+        <div className="mt-5">
           <SectionHeader title={merchantSuggestion ? `Categoría · regla: ${merchantSuggestion.label}` : "Categoría"} />
           {cats.length === 0 ? (
             <div className="rounded-2xl border border-[#2A5BFF2e] bg-[#2A5BFF0f] px-3.5 py-3 text-[13px] text-[#a4adbe]">
               Crea categorías desde <span className="font-semibold text-[#2A5BFF]">Setup → Configuración</span> para poder guardar gastos.
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {cats.map((c) => (
                 <button
                   type="button"
                   key={c.id}
                   onClick={() => form.setValue("categoryId", c.id)}
-                  className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium"
                   style={{ background: cat === c.id ? `${c.color}22` : FT.surface, borderColor: cat === c.id ? `${c.color}55` : FT.hairline, color: cat === c.id ? c.color : FT.textDim }}
                 >
                   <Dot color={c.color} />
@@ -161,26 +163,30 @@ export function ExpenseFormScreen({
             </div>
           )}
         </div>
-        <div className="mt-4">
+        <div className="mt-5">
           <SectionHeader title="Método de pago" />
-          <div className="mb-3 grid grid-cols-2 gap-2 min-[390px]:grid-cols-4">
+          <div className="mb-4 grid grid-cols-2 gap-2.5">
             <MethodButton icon={Wallet} label="Todos" active={methodType === "all"} onClick={() => setMethodType("all")} />
             <MethodButton icon={CreditCard} label="Crédito" active={methodType === "credit_card"} onClick={() => setMethodType("credit_card")} />
             <MethodButton icon={Banknote} label="Débito" active={methodType === "debit"} onClick={() => setMethodType("debit")} />
             <MethodButton icon={ReceiptText} label="Cash" active={methodType === "cash"} onClick={() => setMethodType("cash")} />
           </div>
           <SectionHeader title="Cargar a" />
-          <Card className="max-h-[146px] overflow-auto">
+          <Card className="max-h-[172px] overflow-auto">
             {filteredMethods.map((m, index) => (
-              <button type="button" key={m.id} onClick={() => form.setValue("accountId", m.id)} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left ${index === filteredMethods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
+              <button type="button" key={m.id} onClick={() => form.setValue("accountId", m.id)} className={`flex w-full items-start gap-3 px-4 py-4 text-left ${index === filteredMethods.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
                 <span className="grid size-[22px] shrink-0 place-items-center rounded-full border" style={{ borderColor: method === m.id ? FT.accent : "rgba(255,255,255,0.10)" }}>
                   {method === m.id ? <span className="size-2.5 rounded-full bg-[#2A5BFF]" /> : null}
                 </span>
-                <span className="flex-1">
+                <span className="min-w-0 flex-1">
                   <span className="block text-[14px] font-medium">{m.label}</span>
                   <span className="mt-0.5 block text-[11px] text-[#6a7384]">{m.sub}</span>
                 </span>
-                {method === m.id && m.cycleLabel ? <Tag color={FT.accent} bg={FT.accentSoft}>{m.cycleLabel}</Tag> : null}
+                {method === m.id && m.cycleLabel ? (
+                  <span className="max-w-[132px] shrink-0 truncate">
+                    <Tag color={FT.accent} bg={FT.accentSoft}>{m.cycleLabel}</Tag>
+                  </span>
+                ) : null}
               </button>
             ))}
             {filteredMethods.length === 0 ? (
@@ -192,7 +198,7 @@ export function ExpenseFormScreen({
             ) : null}
           </Card>
         </div>
-        <Card className="mt-4 p-4">
+        <Card className="mt-5 p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[14px] font-medium">¿Meses sin intereses?</div>
@@ -222,14 +228,14 @@ export function ExpenseFormScreen({
             </div>
           ) : null}
         </Card>
-        <Card className="mt-4 p-4">
-          <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
+        <Card className="mt-5 p-4">
+          <div className="grid grid-cols-1 gap-4">
             <label className="text-[12px] text-[#6a7384]">
               Fecha
               <input
                 type="date"
                 {...form.register("date", { required: true })}
-                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="mt-1.5 block h-12 w-full min-w-0 rounded-[16px] border border-white/[0.08] bg-[#10141d] px-4 text-[15px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
             <label className="text-[12px] text-[#6a7384]">
@@ -237,12 +243,12 @@ export function ExpenseFormScreen({
               <input
                 type="time"
                 {...form.register("time", { required: true })}
-                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                className="mt-1.5 block h-12 w-full min-w-0 rounded-[16px] border border-white/[0.08] bg-[#10141d] px-4 text-[15px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
           </div>
         </Card>
-        <Card className="mt-4 p-4">
+        <Card className="mt-5 p-4">
           <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Nota</div>
           <input
             {...form.register("note")}
@@ -281,7 +287,7 @@ function MethodButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border text-[10px] font-medium"
+      className="flex h-[54px] flex-col items-center justify-center gap-1 rounded-2xl border text-[11px] font-medium"
       style={{
         background: active ? FT.accentSoft : "rgba(255,255,255,0.04)",
         borderColor: active ? "rgba(42,91,255,0.45)" : "rgba(255,255,255,0.08)",
