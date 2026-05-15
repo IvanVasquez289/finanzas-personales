@@ -202,55 +202,70 @@ export function CardDetailScreen({
           </div>
         </div>
         {card.cycleId ? (
-          <form action={paymentAction} className="mt-4">
-            <input type="hidden" name="cycleId" value={card.cycleId} />
-            <label className="mb-2 block text-[12px] text-[#6a7384]">
-              Cuenta origen
-              <select
-                name="paymentAccountId"
-                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
-                defaultValue={paymentSources[0]?.id ?? ""}
-              >
-                {paymentSources.map((source) => (
-                  <option key={source.id} value={source.id}>{source.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="mb-2 block text-[12px] text-[#6a7384]">
-              Pago a registrar
-              <input
-                name="amount"
-                type="number"
-                min={0}
-                max={Math.max(card.due, paymentAmount)}
-                step="0.01"
-                value={paymentAmount}
-                onChange={(event) => setPaymentAmount(Number(event.target.value))}
-                className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
-              />
-            </label>
-            <Button className="w-full" disabled={paymentPending || card.due <= 0 || paymentSources.length === 0}>
-              {paymentSources.length === 0 ? "Crea una cuenta origen" : card.due > 0 ? `Registrar pago de ${money(paymentAmount)}` : "Ciclo pagado"}
-            </Button>
-            {paymentState.message ? (
-              <div className="mt-2 text-center text-[12px]" style={{ color: paymentState.ok ? FT.pos : FT.danger }}>
-                {paymentState.message}
-              </div>
-            ) : null}
-          </form>
-        ) : null}
-        {card.cycleId ? (
-          <form action={closeAction} className="mt-2">
-            <input type="hidden" name="cycleId" value={card.cycleId} />
-            <Button type="submit" variant="secondary" className="w-full" disabled={closePending}>
-              {closePending ? "Cerrando ciclo" : "Cerrar ciclo"}
-            </Button>
-            {closeState.message ? (
-              <div className="mt-2 text-center text-[12px]" style={{ color: closeState.ok ? FT.pos : FT.danger }}>
-                {closeState.message}
-              </div>
-            ) : null}
-          </form>
+          <div className="mt-5 border-t border-white/[0.06] pt-4">
+            <div className="mb-3">
+              <div className="text-[13px] font-semibold">Registrar pago de tarjeta</div>
+              <p className="mt-0.5 text-[11px] leading-[1.45] text-[#6a7384]">
+                ¿Ya pagaste tu tarjeta? Selecciona la cuenta bancaria desde donde hiciste el abono y el monto que pagaste.
+              </p>
+            </div>
+            <form action={paymentAction} className="grid gap-2">
+              <input type="hidden" name="cycleId" value={card.cycleId} />
+              <label className="block text-[12px] text-[#6a7384]">
+                Desde cuenta bancaria
+                <select
+                  name="paymentAccountId"
+                  className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                  defaultValue={paymentSources[0]?.id ?? ""}
+                >
+                  {paymentSources.map((source) => (
+                    <option key={source.id} value={source.id}>{source.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[12px] text-[#6a7384]">
+                Monto del abono
+                <input
+                  name="amount"
+                  type="number"
+                  min={0}
+                  max={Math.max(card.due, paymentAmount)}
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(event) => setPaymentAmount(Number(event.target.value))}
+                  className="mt-1.5 h-11 w-full rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-right font-mono text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+                />
+              </label>
+              <Button className="w-full" disabled={paymentPending || card.due <= 0 || paymentSources.length === 0}>
+                {paymentSources.length === 0
+                  ? "Crea una cuenta bancaria primero"
+                  : card.due > 0
+                    ? `Confirmar pago de ${money(paymentAmount)}`
+                    : "Tarjeta pagada ✓"}
+              </Button>
+              {paymentState.message ? (
+                <div className="text-center text-[12px]" style={{ color: paymentState.ok ? FT.pos : FT.danger }}>
+                  {paymentState.message}
+                </div>
+              ) : null}
+            </form>
+            <div className="mt-3 border-t border-white/[0.06] pt-3">
+              <p className="mb-2 text-[11px] text-[#6a7384]">
+                ¿Ya liquidaste completamente este ciclo? Ciérralo para archivar los movimientos.
+              </p>
+              <form action={closeAction}>
+                <input type="hidden" name="cycleId" value={card.cycleId} />
+                <Button type="submit" variant="secondary" className="w-full" disabled={closePending}>
+                  {closePending ? "Cerrando…" : "Cerrar y archivar ciclo"}
+                </Button>
+                {closeState.message ? (
+                  <div className="mt-2 text-center text-[12px]" style={{ color: closeState.ok ? FT.pos : FT.danger }}>
+                    {closeState.message}
+                  </div>
+                ) : null}
+              </form>
+            </div>
+          </div>
         ) : null}
       </Card>
       <div>

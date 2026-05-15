@@ -294,10 +294,16 @@ export function SettingsScreen({
                       {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-3">
-                    <Input name="amount" type="number" step="0.01" placeholder="Monto" />
-                    <Input name="periodStart" type="date" />
-                    <Input name="periodEnd" type="date" />
+                  <Input name="amount" type="number" step="0.01" placeholder="Monto límite" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-[11px] text-[#6a7384]">
+                      Inicio
+                      <Input name="periodStart" type="date" className="mt-1 block w-full" />
+                    </label>
+                    <label className="text-[11px] text-[#6a7384]">
+                      Fin
+                      <Input name="periodEnd" type="date" className="mt-1 block w-full" />
+                    </label>
                   </div>
                   <Button disabled={budgetPending}>Crear presupuesto</Button>
                   <StateMessage state={budgetState} />
@@ -312,22 +318,41 @@ export function SettingsScreen({
                   <button type="button" className="text-[#2A5BFF]" onClick={() => setCreateBudgetOpen(true)}>Crear uno →</button>
                 </div>
               ) : (
-                data.settings.budgets.map((budget, index) => (
-                  <div key={budget.id} className={`flex items-center gap-3 px-4 py-3 ${index === data.settings.budgets.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
-                    <SlidersHorizontal size={16} className="shrink-0 text-[#6a7384]" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[14px] font-medium">{budget.label}</div>
-                      <div className="mt-0.5 text-[11px] text-[#6a7384]">{budget.periodStart} · {budget.periodEnd}</div>
+                data.settings.budgets.map((budget, index) => {
+                  const spentPct = budget.amount > 0 ? budget.spent / budget.amount : 0;
+                  const over = budget.spent > budget.amount;
+                  const barColor = over ? FT.danger : spentPct > 0.8 ? FT.warn : FT.pos;
+                  return (
+                    <div key={budget.id} className={`px-4 py-3.5 ${index === data.settings.budgets.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
+                      <div className="flex items-start gap-3">
+                        <SlidersHorizontal size={15} className="mt-0.5 shrink-0 text-[#6a7384]" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="truncate text-[14px] font-medium">{budget.label}</span>
+                            <span className="shrink-0 font-mono text-[12px]" style={{ color: over ? FT.danger : FT.text }}>
+                              {money(budget.spent)} / {money(budget.amount)}
+                            </span>
+                          </div>
+                          <div className="mt-1.5">
+                            <ProgressBar pct={Math.min(100, spentPct * 100)} color={barColor} height={4} />
+                          </div>
+                          <div className="mt-1.5 flex items-center justify-between">
+                            <span className="text-[10px] text-[#6a7384]">{budget.periodStart} → {budget.periodEnd}</span>
+                            <span className="text-[10px] font-medium" style={{ color: barColor }}>
+                              {over ? `+${money(budget.spent - budget.amount)} excedido` : `${money(budget.amount - budget.spent)} libre`}
+                            </span>
+                          </div>
+                        </div>
+                        <form action={deleteBudget}>
+                          <input type="hidden" name="id" value={budget.id} />
+                          <button aria-label="Eliminar presupuesto" disabled={deleteBudgetPending} className="mt-0.5 text-[#F46A6A]/50">
+                            <Trash2 size={13} />
+                          </button>
+                        </form>
+                      </div>
                     </div>
-                    <div className="font-mono text-[13px]">{money(budget.amount)}</div>
-                    <form action={deleteBudget}>
-                      <input type="hidden" name="id" value={budget.id} />
-                      <button aria-label="Eliminar presupuesto" disabled={deleteBudgetPending} className="text-[#F46A6A]/60">
-                        <Trash2 size={14} />
-                      </button>
-                    </form>
-                  </div>
-                ))
+                  );
+                })
               )}
             </Card>
             <StateMessage state={deleteBudgetState} />

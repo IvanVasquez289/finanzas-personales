@@ -157,6 +157,7 @@ export type FinanceSnapshot = {
       id: string;
       label: string;
       amount: number;
+      spent: number;
       periodStart: string;
       periodEnd: string;
     }[];
@@ -611,13 +612,32 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         targetAmount: toAmount(goal.targetAmountCents),
         status: goal.status,
       })),
-      budgets: budgets.map((budget) => ({
-        id: budget.id,
-        label: budget.category?.name ?? budget.account?.name ?? budget.scope,
-        amount: toAmount(budget.amountCents),
-        periodStart: budget.periodStart.toISOString().slice(0, 10),
-        periodEnd: budget.periodEnd.toISOString().slice(0, 10),
-      })),
+      budgets: budgets.map((budget) => {
+        const start = budget.periodStart.toISOString().slice(0, 10);
+        const end = budget.periodEnd.toISOString().slice(0, 10);
+        const spentCents = allTransactions
+          .filter((tx) => {
+            if (tx.direction !== "expense") return false;
+            const d = tx.date.toISOString().slice(0, 10);
+            return d >= start && d <= end;
+          })
+          .filter((tx) =>
+            budget.categoryId
+              ? tx.categoryId === budget.categoryId
+              : budget.accountId
+                ? tx.accountId === budget.accountId
+                : false,
+          )
+          .reduce((sum, tx) => sum + tx.amountCents, 0);
+        return {
+          id: budget.id,
+          label: budget.category?.name ?? budget.account?.name ?? budget.scope,
+          amount: toAmount(budget.amountCents),
+          spent: toAmount(spentCents),
+          periodStart: start,
+          periodEnd: end,
+        };
+      }),
       installmentPlans: installmentPlans.map((plan) => ({
         id: plan.id,
         merchant: plan.merchant,

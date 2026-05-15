@@ -7,6 +7,7 @@ import { ReorderEnvelopesScreen } from "@/features/accounts/reorder-envelopes-sc
 import { PaymentCalendarScreen } from "@/features/calendar/payment-calendar-screen";
 import { CardDetailScreen } from "@/features/credit-cards/card-detail-screen";
 import { DashboardScreen } from "@/features/dashboard/dashboard-screen";
+import { GoalScreen } from "@/features/goals/goal-screen";
 import { DistributionScreen } from "@/features/income/distribution-screen";
 import { ImportWorkbenchScreen } from "@/features/imports/import-workbench-screen";
 import type { AppScreen } from "@/features/navigation/types";
@@ -26,19 +27,21 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
         ? "cards"
         : screen === "settings-plan"
           ? "goal"
-          : screen === "transactions"
-            ? "home"
-            : screen === "calendar"
+          : screen === "distribute"
+            ? "goal"
+            : screen === "transactions"
               ? "home"
-              : screen === "reports"
+              : screen === "calendar"
                 ? "home"
-                : screen === "imports"
+                : screen === "reports"
                   ? "home"
-                  : screen === "onboarding"
+                  : screen === "imports"
                     ? "home"
-                    : screen === "reorder-envelopes"
-                      ? "env"
-                      : screen;
+                    : screen === "onboarding"
+                      ? "home"
+                      : screen === "reorder-envelopes"
+                        ? "env"
+                        : screen;
 
   return (
     <AppShell active={activeTab} onNavigate={setScreen} hideNavigation={screen === "add"}>
@@ -71,10 +74,18 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
         />
       ) : null}
       {screen === "goal" ? (
-        <DistributionScreen
+        <GoalScreen
           data={snapshot}
           onBack={() => setScreen("home")}
-          onSaved={() => setScreen("home")}
+          onDistribute={() => setScreen("distribute")}
+          onManage={() => setScreen("settings-plan")}
+        />
+      ) : null}
+      {screen === "distribute" ? (
+        <DistributionScreen
+          data={snapshot}
+          onBack={() => setScreen("goal")}
+          onSaved={() => setScreen("goal")}
           onManageGoal={() => setScreen("settings-plan")}
         />
       ) : null}
@@ -92,7 +103,7 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
           onAccounts={() => setScreen("settings-accounts")}
           onCards={() => setScreen("settings-cards")}
           onPlan={() => setScreen("settings-plan")}
-          onIncome={() => setScreen("goal")}
+          onIncome={() => setScreen("distribute")}
         />
       ) : null}
       {screen === "reorder-envelopes" ? <ReorderEnvelopesScreen data={snapshot} onBack={() => setScreen("env")} /> : null}

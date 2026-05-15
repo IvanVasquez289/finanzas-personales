@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CreditCard, Pencil, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, CreditCard, LayoutList, Pencil, PieChart, Search, Trash2 } from "lucide-react";
+import { ProgressBar } from "@/components/finance/progress-bar";
 import { SectionHeader } from "@/components/finance/section-header";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,12 @@ export function TransactionsScreen({ data, onBack }: { data: FinanceSnapshot; on
   const [mode, setMode] = useState<MovementMode>("all");
   const [period, setPeriod] = useState<PeriodMode>("90");
   const [query, setQuery] = useState("");
+  const [view, setView] = useState<"list" | "categories">("list");
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const start = new Date();
-    if (period !== "all") {
-      start.setDate(start.getDate() - Number(period));
-    }
+    if (period !== "all") start.setDate(start.getDate() - Number(period));
 
     return data.movementDetail.filter((transaction) => {
       const inPeriod = period === "all" || new Date(transaction.dateIso) >= start;
@@ -50,20 +50,37 @@ export function TransactionsScreen({ data, onBack }: { data: FinanceSnapshot; on
         [transaction.merchant, transaction.cat, transaction.account, transaction.cycleLabel]
           .filter((value): value is string => Boolean(value))
           .some((value) => value.toLowerCase().includes(normalizedQuery));
-
       return inPeriod && inMode && inQuery;
     });
   }, [data.movementDetail, mode, period, query]);
 
   const expenseTotal = filtered
-    .filter((transaction) => transaction.direction === "expense")
-    .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    .filter((t) => t.direction === "expense")
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   const incomeTotal = filtered
-    .filter((transaction) => transaction.direction === "income")
-    .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    .filter((t) => t.direction === "income")
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   const cardTotal = filtered
-    .filter((transaction) => ["credit_card", "store_card"].includes(transaction.accountType))
-    .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    .filter((t) => ["credit_card", "store_card"].includes(t.accountType))
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const categoryBreakdown = useMemo(() => {
+    const expenseOnly = filtered.filter((t) => t.direction === "expense");
+    const grouped = new Map<string, { name: string; color: string; total: number; count: number }>();
+    for (const tx of expenseOnly) {
+      const key = tx.categoryId ?? tx.cat;
+      if (!grouped.has(key)) {
+        const cat = data.expenseForm.categories.find((c) => c.id === tx.categoryId);
+        grouped.set(key, { name: cat?.label ?? tx.cat, color: cat?.color ?? "#a4adbe", total: 0, count: 0 });
+      }
+      const entry = grouped.get(key)!;
+      entry.total += Math.abs(tx.amount);
+      entry.count += 1;
+    }
+    return Array.from(grouped.values()).sort((a, b) => b.total - a.total);
+  }, [filtered, data.expenseForm.categories]);
+
+  const categoryTotal = categoryBreakdown.reduce((sum, c) => sum + c.total, 0);
 
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
@@ -72,8 +89,23 @@ export function TransactionsScreen({ data, onBack }: { data: FinanceSnapshot; on
           <ArrowLeft size={16} />
         </Button>
         <div className="text-[14px] text-[#a4adbe]">Movimientos</div>
-        <div className="grid size-10 place-items-center rounded-full border border-white/10 bg-[#161b25] text-[#a4adbe]">
-          <CreditCard size={17} />
+        <div className="flex items-center gap-1 rounded-xl border border-white/[0.08] bg-[#161b25] p-1">
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            className="grid size-8 place-items-center rounded-lg transition-colors"
+            style={{ background: view === "list" ? FT.accentSoft : "transparent", color: view === "list" ? FT.accent : FT.textFade }}
+          >
+            <LayoutList size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("categories")}
+            className="grid size-8 place-items-center rounded-lg transition-colors"
+            style={{ background: view === "categories" ? FT.accentSoft : "transparent", color: view === "categories" ? FT.accent : FT.textFade }}
+          >
+            <PieChart size={15} />
+          </button>
         </div>
       </div>
 
@@ -87,52 +119,81 @@ export function TransactionsScreen({ data, onBack }: { data: FinanceSnapshot; on
 
       <div className="grid grid-cols-4 gap-2">
         {modeOptions.map((option) => (
-          <FilterButton
-            key={option.id}
-            active={mode === option.id}
-            label={option.label}
-            onClick={() => setMode(option.id)}
-          />
+          <FilterButton key={option.id} active={mode === option.id} label={option.label} onClick={() => setMode(option.id)} />
         ))}
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         {periodOptions.map((option) => (
-          <FilterButton
-            key={option.id}
-            active={period === option.id}
-            label={option.label}
-            onClick={() => setPeriod(option.id)}
-          />
+          <FilterButton key={option.id} active={period === option.id} label={option.label} onClick={() => setPeriod(option.id)} />
         ))}
       </div>
 
-      <label className="flex h-11 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#10141d] px-3 text-[#a4adbe]">
-        <Search size={16} />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar comercio, categoría o cuenta"
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-[#eef2f8] outline-none placeholder:text-[#6a7384]"
-        />
-      </label>
+      {view === "list" && (
+        <label className="flex h-11 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#10141d] px-3 text-[#a4adbe]">
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar comercio, categoría o cuenta"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-[#eef2f8] outline-none placeholder:text-[#6a7384]"
+          />
+        </label>
+      )}
 
-      <div>
-        <SectionHeader title={`${filtered.length} movimientos`} />
-        <Card className="overflow-hidden">
-          {filtered.map((transaction, index) => (
-            <TransactionEditRow
-              key={transaction.id}
-              transaction={transaction}
-              categories={data.expenseForm.categories}
-              last={index === filtered.length - 1}
-            />
-          ))}
-          {filtered.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[13px] text-[#6a7384]">Sin movimientos con esos filtros.</div>
-          ) : null}
-        </Card>
-      </div>
+      {view === "list" ? (
+        <div>
+          <SectionHeader title={`${filtered.length} movimientos`} />
+          <Card className="overflow-hidden">
+            {filtered.map((transaction, index) => (
+              <TransactionEditRow
+                key={transaction.id}
+                transaction={transaction}
+                categories={data.expenseForm.categories}
+                last={index === filtered.length - 1}
+              />
+            ))}
+            {filtered.length === 0 ? (
+              <div className="px-4 py-8 text-center text-[13px] text-[#6a7384]">Sin movimientos con esos filtros.</div>
+            ) : null}
+          </Card>
+        </div>
+      ) : (
+        <div>
+          <SectionHeader title={`Por categoría · ${money(categoryTotal)} en gastos`} />
+          {categoryBreakdown.length === 0 ? (
+            <Card className="p-4 text-center text-[13px] text-[#6a7384]">Sin gastos en este período.</Card>
+          ) : (
+            <Card className="overflow-hidden">
+              {categoryBreakdown.map((cat, index) => {
+                const pct = categoryTotal > 0 ? cat.total / categoryTotal : 0;
+                return (
+                  <div
+                    key={cat.name}
+                    className={`px-4 py-3.5 ${index === categoryBreakdown.length - 1 ? "" : "border-b border-white/[0.06]"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: cat.color }} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[14px] font-medium">{cat.name}</span>
+                          <span className="shrink-0 font-mono text-[13px]">{money(cat.total)}</span>
+                        </div>
+                        <div className="mt-1.5">
+                          <ProgressBar pct={pct * 100} color={cat.color} height={3} />
+                        </div>
+                        <div className="mt-1 text-[10px] text-[#6a7384]">
+                          {Math.round(pct * 100)}% del total · {cat.count} movimiento{cat.count !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

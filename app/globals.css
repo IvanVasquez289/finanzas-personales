@@ -60,15 +60,9 @@ textarea {
 }
 
 .app-bottom-scroll {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 88px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 96px);
 }
 
 .app-bottom-fixed {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 62px);
-}
-
-.app-bottom-nav {
-  bottom: max(8px, calc(env(safe-area-inset-bottom) - 14px));
-  left: max(12px, env(safe-area-inset-left));
-  right: max(12px, env(safe-area-inset-right));
+  padding-bottom: calc(env(safe-area-inset-bottom) + 70px);
 }
