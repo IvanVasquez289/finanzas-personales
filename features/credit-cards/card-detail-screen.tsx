@@ -27,6 +27,7 @@ export function CardDetailScreen({
 }) {
   const router = useRouter();
   const [selectedCard, setSelectedCard] = useState(0);
+  const [showCloseSection, setShowCloseSection] = useState(false);
   const [paymentState, paymentAction, paymentPending] = useActionState(registerCardPaymentAction, {
     ok: false,
     message: "",
@@ -60,10 +61,10 @@ export function CardDetailScreen({
   const cycleElapsedDays = cycleStart ? (today.getTime() - cycleStart.getTime()) / 86_400_000 : 0;
   const cyclePct = cycleTotalDays > 0 ? Math.round((cycleElapsedDays / cycleTotalDays) * 100) : 0;
   const installmentRows = data.payments.filter(
-    (payment) => (payment.chip === "MSI" || payment.chip === "Sobre") && (!payment.accountId || payment.accountId === card.accountId),
+    (payment) => (payment.chip === "MSI" || payment.chip === "Sobre") && payment.accountId === card.accountId,
   );
   const paymentSources = data.expenseForm.accounts.filter((account) => account.paymentMethod !== "credit_card");
-  const [paymentAmount, setPaymentAmount] = useState(card.due);
+  const [paymentAmount, setPaymentAmount] = useState(0);
   const cardGradient = `linear-gradient(135deg, ${shade(card.dot, -34)} 0%, ${card.dot} 56%, ${shade(card.dot, 28)} 100%)`;
 
   useEffect(() => {
@@ -73,8 +74,8 @@ export function CardDetailScreen({
   }, [paymentState.ok, router]);
 
   useEffect(() => {
-    setPaymentAmount(card.due);
-  }, [card.due, selectedCard]);
+    setPaymentAmount(0);
+  }, [selectedCard]);
 
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
@@ -224,12 +225,22 @@ export function CardDetailScreen({
                 </select>
               </label>
               <label className="block text-[12px] text-[#6a7384]">
-                Monto del abono
+                <div className="flex items-baseline justify-between">
+                  <span>Monto del abono</span>
+                  {card.due > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentAmount(card.due)}
+                      className="text-[11px] text-[#2A5BFF]"
+                    >
+                      Usar saldo {money(card.due)}
+                    </button>
+                  )}
+                </div>
                 <input
                   name="amount"
                   type="number"
                   min={0}
-                  max={Math.max(card.due, paymentAmount)}
                   step="0.01"
                   value={paymentAmount}
                   onChange={(event) => setPaymentAmount(Number(event.target.value))}
@@ -250,20 +261,47 @@ export function CardDetailScreen({
               ) : null}
             </form>
             <div className="mt-3 border-t border-white/[0.06] pt-3">
-              <p className="mb-2 text-[11px] text-[#6a7384]">
-                ¿Ya liquidaste completamente este ciclo? Ciérralo para archivar los movimientos.
-              </p>
-              <form action={closeAction}>
-                <input type="hidden" name="cycleId" value={card.cycleId} />
-                <Button type="submit" variant="secondary" className="w-full" disabled={closePending}>
-                  {closePending ? "Cerrando…" : "Cerrar y archivar ciclo"}
-                </Button>
-                {closeState.message ? (
-                  <div className="mt-2 text-center text-[12px]" style={{ color: closeState.ok ? FT.pos : FT.danger }}>
-                    {closeState.message}
-                  </div>
-                ) : null}
-              </form>
+              {!showCloseSection ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCloseSection(true)}
+                  className="text-[11px] text-[#6a7384] underline-offset-2 hover:text-[#a4adbe]"
+                >
+                  Cerrar y archivar ciclo…
+                </button>
+              ) : (
+                <>
+                  <p className="mb-1 text-[11px] font-medium text-[#eef2f8]">¿Qué es cerrar un ciclo?</p>
+                  <p className="mb-3 text-[11px] leading-[1.5] text-[#6a7384]">
+                    Cada mes tu tarjeta genera un <em>ciclo</em> de facturación que agrupa tus compras. Al cerrarlo, marcas ese período como pagado y archivado. Solo hazlo cuando ya liquidaste el total — no se puede deshacer.
+                  </p>
+                  <form
+                    action={closeAction}
+                    onSubmit={(e) => {
+                      if (!window.confirm("¿Confirmas cerrar y archivar este ciclo? Esta acción no se puede deshacer.")) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="cycleId" value={card.cycleId} />
+                    <Button type="submit" variant="secondary" className="w-full text-[#E94B6A]" disabled={closePending}>
+                      {closePending ? "Cerrando…" : "Confirmar cierre de ciclo"}
+                    </Button>
+                    {closeState.message ? (
+                      <div className="mt-2 text-center text-[12px]" style={{ color: closeState.ok ? FT.pos : FT.danger }}>
+                        {closeState.message}
+                      </div>
+                    ) : null}
+                  </form>
+                  <button
+                    type="button"
+                    onClick={() => setShowCloseSection(false)}
+                    className="mt-2 w-full text-center text-[11px] text-[#6a7384]"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : null}

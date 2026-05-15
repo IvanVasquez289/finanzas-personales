@@ -444,38 +444,32 @@ export async function createBudgetAction(
   formData: FormData,
 ): Promise<SettingsActionState> {
   const parsed = z.object({
-    scope: z.enum(["category", "account"]),
-    targetId: z.string().min(1),
+    categoryId: z.string().min(1, "Selecciona una categoría."),
     amount: moneySchema,
-    periodStart: z.string().min(1),
-    periodEnd: z.string().min(1),
   }).safeParse({
-    scope: formData.get("scope"),
-    targetId: formData.get("targetId"),
+    categoryId: formData.get("categoryId"),
     amount: formData.get("amount") || 0,
-    periodStart: formData.get("periodStart"),
-    periodEnd: formData.get("periodEnd"),
   });
-  if (!parsed.success) return error("Revisa el presupuesto.");
+  if (!parsed.success) return error(parsed.error.issues[0]?.message ?? "Revisa el presupuesto.");
   const user = await getCurrentFinanceUser();
   if (!user) return error("Inicia sesión.");
 
-  const [category, account] = await Promise.all([
-    prisma.category.findFirst({ where: { id: parsed.data.targetId, userId: user.id } }),
-    prisma.account.findFirst({ where: { id: parsed.data.targetId, userId: user.id } }),
-  ]);
-  const scope = category ? "category" : account ? "account" : parsed.data.scope;
-  if (!category && !account) return error("El objetivo del presupuesto no existe.");
+  const category = await prisma.category.findFirst({ where: { id: parsed.data.categoryId, userId: user.id } });
+  if (!category) return error("La categoría no existe.");
+
+  const now = new Date();
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
   await prisma.budget.create({
     data: {
       userId: user.id,
-      scope,
-      categoryId: category ? parsed.data.targetId : null,
-      accountId: account ? parsed.data.targetId : null,
+      scope: "category",
+      categoryId: category.id,
+      accountId: null,
       amountCents: toCents(parsed.data.amount),
-      periodStart: new Date(`${parsed.data.periodStart}T00:00:00`),
-      periodEnd: new Date(`${parsed.data.periodEnd}T23:59:59`),
+      periodStart: firstOfMonth,
+      periodEnd: new Date(lastOfMonth.getFullYear(), lastOfMonth.getMonth(), lastOfMonth.getDate(), 23, 59, 59),
     },
   });
 

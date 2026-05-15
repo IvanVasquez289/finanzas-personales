@@ -20,28 +20,14 @@ import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 
 export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
   const [screen, setScreen] = useState<AppScreen>("home");
-  const activeTab =
-    screen === "settings-accounts"
-      ? "env"
-      : screen === "settings-cards"
-        ? "cards"
-        : screen === "settings-plan"
-          ? "goal"
-          : screen === "distribute"
-            ? "goal"
-            : screen === "transactions"
-              ? "home"
-              : screen === "calendar"
-                ? "home"
-                : screen === "reports"
-                  ? "home"
-                  : screen === "imports"
-                    ? "home"
-                    : screen === "onboarding"
-                      ? "home"
-                      : screen === "reorder-envelopes"
-                        ? "env"
-                        : screen;
+  const activeTab: AppScreen =
+    screen === "settings-accounts" || screen === "settings-cards" || screen === "settings-plan" || screen === "reorder-envelopes"
+      ? "settings-accounts"
+      : screen === "distribute" || screen === "goal"
+        ? "home"
+        : screen === "calendar" || screen === "reports" || screen === "imports" || screen === "onboarding" || screen === "env"
+          ? "home"
+          : screen;
 
   return (
     <AppShell active={activeTab} onNavigate={setScreen} hideNavigation={screen === "add"}>
@@ -89,7 +75,7 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
           onManageGoal={() => setScreen("settings-plan")}
         />
       ) : null}
-      {screen === "settings-accounts" ? <SettingsScreen data={snapshot} section="accounts" onBack={() => setScreen("env")} /> : null}
+      {screen === "settings-accounts" ? <SettingsScreen data={snapshot} section="accounts" onBack={() => setScreen("home")} /> : null}
       {screen === "settings-cards" ? <SettingsScreen data={snapshot} section="cards" onBack={() => setScreen("cards")} /> : null}
       {screen === "settings-plan" ? <SettingsScreen data={snapshot} section="plan" onBack={() => setScreen("goal")} /> : null}
       {screen === "transactions" ? <TransactionsScreen data={snapshot} onBack={() => setScreen("home")} /> : null}

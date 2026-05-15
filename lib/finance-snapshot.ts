@@ -160,6 +160,7 @@ export type FinanceSnapshot = {
       spent: number;
       periodStart: string;
       periodEnd: string;
+      isRolling: boolean;
     }[];
     installmentPlans: {
       id: string;
@@ -613,8 +614,16 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         status: goal.status,
       })),
       budgets: budgets.map((budget) => {
-        const start = budget.periodStart.toISOString().slice(0, 10);
-        const end = budget.periodEnd.toISOString().slice(0, 10);
+        const storedStart = budget.periodStart.toISOString().slice(0, 10);
+        const storedEnd = budget.periodEnd.toISOString().slice(0, 10);
+        const spanDays = (budget.periodEnd.getTime() - budget.periodStart.getTime()) / 86_400_000;
+        const isRolling = spanDays >= 28 && spanDays <= 32 && storedEnd < new Date().toISOString().slice(0, 10);
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const monthStart = todayIso.slice(0, 8) + "01";
+        const lastDay = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        const monthEnd = `${todayIso.slice(0, 8)}${lastDay}`;
+        const start = isRolling ? monthStart : storedStart;
+        const end = isRolling ? monthEnd : storedEnd;
         const spentCents = allTransactions
           .filter((tx) => {
             if (tx.direction !== "expense") return false;
@@ -636,6 +645,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
           spent: toAmount(spentCents),
           periodStart: start,
           periodEnd: end,
+          isRolling,
         };
       }),
       installmentPlans: installmentPlans.map((plan) => ({

@@ -18,7 +18,7 @@ const createExpenseSchema = z.object({
     .trim()
     .regex(/^\d+(\.\d{1,2})?$/, "El monto debe tener máximo dos decimales."),
   accountId: z.string().min(1, "Selecciona una cuenta."),
-  categoryId: z.string().min(1, "Selecciona una categoría."),
+  categoryId: z.string().optional(),
   merchant: z.string().trim().min(1, "Escribe el comercio."),
   note: z.string().trim().max(180, "La nota es demasiado larga.").optional(),
   date: z.string().min(1, "Selecciona la fecha."),
@@ -34,7 +34,7 @@ export async function createExpenseAction(
   const parsed = createExpenseSchema.safeParse({
     amount: formData.get("amount"),
     accountId: formData.get("accountId"),
-    categoryId: formData.get("categoryId"),
+    categoryId: formData.get("categoryId") || undefined,
     merchant: formData.get("merchant"),
     note: formData.get("note"),
     date: formData.get("date"),
@@ -60,30 +60,29 @@ export async function createExpenseAction(
     return { ok: false, message: "Inicia sesión para guardar gastos." };
   }
 
-  const [account, category] = await Promise.all([
-    prisma.account.findFirst({
-      where: { id: parsed.data.accountId, userId: user.id, isActive: true },
-      include: {
-        creditAccount: {
-          include: {
-            cycles: {
-              where: { status: "open" },
-              orderBy: { startDate: "desc" },
-            },
+  const account = await prisma.account.findFirst({
+    where: { id: parsed.data.accountId, userId: user.id, isActive: true },
+    include: {
+      creditAccount: {
+        include: {
+          cycles: {
+            where: { status: "open" },
+            orderBy: { startDate: "desc" },
           },
         },
       },
-    }),
-    prisma.category.findFirst({
-      where: { id: parsed.data.categoryId, userId: user.id },
-    }),
-  ]);
+    },
+  });
 
   if (!account) {
     return { ok: false, message: "La cuenta seleccionada no existe." };
   }
 
-  if (!category) {
+  const category = parsed.data.categoryId
+    ? await prisma.category.findFirst({ where: { id: parsed.data.categoryId, userId: user.id } })
+    : null;
+
+  if (parsed.data.categoryId && !category) {
     return { ok: false, message: "La categoría seleccionada no existe." };
   }
 
@@ -128,7 +127,7 @@ export async function createExpenseAction(
           userId: user.id,
           accountId: account.id,
           creditCardCycleId: creditCycle?.id,
-          categoryId: category.id,
+          categoryId: category?.id ?? null,
           date: now,
           merchantRaw: parsed.data.merchant,
           merchantNormalized,
@@ -191,7 +190,7 @@ export type TransactionMutationState = { ok: boolean; message: string };
 const updateTransactionSchema = z.object({
   transactionId: z.string().min(1),
   merchant: z.string().trim().min(1, "Escribe el comercio."),
-  categoryId: z.string().min(1, "Selecciona una categoría."),
+  categoryId: z.string().optional(),
   amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/, "Monto inválido."),
   date: z.string().min(1, "Selecciona la fecha."),
 });
@@ -203,7 +202,7 @@ export async function updateTransactionAction(
   const parsed = updateTransactionSchema.safeParse({
     transactionId: formData.get("transactionId"),
     merchant: formData.get("merchant"),
-    categoryId: formData.get("categoryId"),
+    categoryId: formData.get("categoryId") || undefined,
     amount: formData.get("amount"),
     date: formData.get("date"),
   });
@@ -223,17 +222,17 @@ export async function updateTransactionAction(
   const amountCents = Math.round(Number(parsed.data.amount) * 100);
   if (amountCents <= 0) return { ok: false, message: "El monto debe ser mayor a cero." };
 
-  const category = await prisma.category.findFirst({
-    where: { id: parsed.data.categoryId, userId: user.id },
-  });
-  if (!category) return { ok: false, message: "Categoría no encontrada." };
+  const category = parsed.data.categoryId
+    ? await prisma.category.findFirst({ where: { id: parsed.data.categoryId, userId: user.id } })
+    : null;
+  if (parsed.data.categoryId && !category) return { ok: false, message: "Categoría no encontrada." };
 
   await prisma.transaction.update({
     where: { id: tx.id },
     data: {
       merchantRaw: parsed.data.merchant,
       merchantNormalized: normalizeMerchant(parsed.data.merchant),
-      categoryId: category.id,
+      categoryId: category?.id ?? null,
       amountCents,
       date: new Date(parsed.data.date),
     },

@@ -5,6 +5,8 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Delete, Search } from "lucide-react";
+
+type AccountFilter = "all" | "credit_card" | "debit" | "cash";
 import { Dot } from "@/components/finance/dot";
 import { Tag } from "@/components/finance/tag";
 import { Card } from "@/components/ui/card";
@@ -67,7 +69,11 @@ export function ExpenseFormScreen({
       .slice(0, 6);
   }, [data.movementDetail]);
 
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>("all");
   const isCreditSelected = selectedMethod?.paymentMethod === "credit_card";
+  const filteredMethods = accountFilter === "all"
+    ? methods
+    : methods.filter((m) => m.paymentMethod === accountFilter);
 
   useEffect(() => {
     if (!state.ok) return;
@@ -98,7 +104,7 @@ export function ExpenseFormScreen({
         <div className="text-[15px] font-semibold">Nuevo gasto</div>
         <button
           className="text-[14px] font-semibold text-[#2A5BFF] disabled:text-[#6a7384]"
-          disabled={pending || !cat || !method}
+          disabled={pending || !method}
         >
           {pending ? "Guardando" : "Guardar"}
         </button>
@@ -121,7 +127,7 @@ export function ExpenseFormScreen({
       </div>
 
       {/* Scrollable fields */}
-      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[228px] pt-4">
+      <div className="no-scrollbar flex-1 overflow-auto px-4 pb-[calc(228px+env(safe-area-inset-bottom))] pt-4">
 
         {/* Merchant */}
         <label className="flex h-[52px] items-center gap-3 rounded-[18px] border border-white/[0.08] bg-[#10141d] px-4 text-[#a4adbe] focus-within:border-[#2A5BFF]/60">
@@ -181,15 +187,33 @@ export function ExpenseFormScreen({
 
         {/* Account */}
         <div className="mt-5">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Cargar a</div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Cargar a</div>
+            <div className="flex gap-1.5">
+              {([ ["all", "Todos"], ["credit_card", "Crédito"], ["debit", "Débito"], ["cash", "Cash"] ] as [AccountFilter, string][]).map(([id, label]) => (
+                <button
+                  type="button"
+                  key={id}
+                  onClick={() => setAccountFilter(id)}
+                  className="rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors"
+                  style={{
+                    background: accountFilter === id ? "rgba(42,91,255,0.15)" : "rgba(255,255,255,0.05)",
+                    color: accountFilter === id ? "#2A5BFF" : "#6a7384",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <Card className="overflow-hidden">
-            {methods.map((m, index) => (
+            {filteredMethods.map((m, index) => (
               <button
                 type="button"
                 key={m.id}
                 onClick={() => form.setValue("accountId", m.id)}
                 className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors ${
-                  index === methods.length - 1 ? "" : "border-b border-white/[0.06]"
+                  index === filteredMethods.length - 1 ? "" : "border-b border-white/[0.06]"
                 }`}
                 style={{ background: method === m.id ? "rgba(42,91,255,0.04)" : undefined }}
               >
@@ -217,6 +241,11 @@ export function ExpenseFormScreen({
             {methods.length === 0 && (
               <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
                 Crea cuentas desde Configuración.
+              </div>
+            )}
+            {methods.length > 0 && filteredMethods.length === 0 && (
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                Sin cuentas de ese tipo.
               </div>
             )}
           </Card>
@@ -260,7 +289,7 @@ export function ExpenseFormScreen({
         {/* Date + Time */}
         <Card className="mt-4 p-4">
           <div className="grid grid-cols-2 gap-3">
-            <label className="text-[11px] text-[#6a7384]">
+            <label className="min-w-0 overflow-hidden text-[11px] text-[#6a7384]">
               Fecha
               <input
                 type="date"
@@ -268,7 +297,7 @@ export function ExpenseFormScreen({
                 className="mt-1.5 block h-11 w-full min-w-0 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
               />
             </label>
-            <label className="text-[11px] text-[#6a7384]">
+            <label className="min-w-0 overflow-hidden text-[11px] text-[#6a7384]">
               Hora
               <input
                 type="time"

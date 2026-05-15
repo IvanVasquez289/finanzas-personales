@@ -117,7 +117,6 @@ export function SettingsScreen({
                   <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[1fr_128px]">
                     <Input name="name" placeholder="Nombre" autoFocus />
                     <select name="type" className={fieldClass}>
-                      <option value="envelope">Sobre</option>
                       <option value="savings">Ahorro</option>
                       <option value="debit">Débito</option>
                       <option value="cash">Efectivo</option>
@@ -154,7 +153,6 @@ export function SettingsScreen({
                         <input type="hidden" name="id" value={account.id} />
                         <Input name="name" defaultValue={account.name} />
                         <select name="type" defaultValue={account.type} className={fieldClass}>
-                          <option value="envelope">Sobre</option>
                           <option value="savings">Ahorro</option>
                           <option value="debit">Débito</option>
                           <option value="cash">Efectivo</option>
@@ -280,32 +278,19 @@ export function SettingsScreen({
             {createBudgetOpen && (
               <Card className="mb-4 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[13px] font-semibold">Nuevo presupuesto</span>
+                  <span className="text-[13px] font-semibold">Nuevo presupuesto mensual</span>
                   <button type="button" onClick={() => setCreateBudgetOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
+                <p className="mb-3 text-[11px] leading-[1.45] text-[#6a7384]">
+                  El presupuesto se renueva automáticamente cada mes de calendario y se vincula al gasto de esa categoría.
+                </p>
                 <form action={createBudget} className="grid gap-3">
-                  <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[128px_1fr]">
-                    <select name="scope" className={fieldClass}>
-                      <option value="category">Categoría</option>
-                      <option value="account">Cuenta</option>
-                    </select>
-                    <select name="targetId" className={fieldClass}>
-                      {activeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
-                  </div>
-                  <Input name="amount" type="number" step="0.01" placeholder="Monto límite" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="text-[11px] text-[#6a7384]">
-                      Inicio
-                      <Input name="periodStart" type="date" className="mt-1 block w-full" />
-                    </label>
-                    <label className="text-[11px] text-[#6a7384]">
-                      Fin
-                      <Input name="periodEnd" type="date" className="mt-1 block w-full" />
-                    </label>
-                  </div>
-                  <Button disabled={budgetPending}>Crear presupuesto</Button>
+                  <select name="categoryId" className={fieldClass}>
+                    <option value="">Selecciona una categoría…</option>
+                    {activeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <Input name="amount" type="number" step="0.01" placeholder="Límite mensual ($)" />
+                  <Button disabled={budgetPending}>Crear</Button>
                   <StateMessage state={budgetState} />
                 </form>
               </Card>
@@ -337,7 +322,9 @@ export function SettingsScreen({
                             <ProgressBar pct={Math.min(100, spentPct * 100)} color={barColor} height={4} />
                           </div>
                           <div className="mt-1.5 flex items-center justify-between">
-                            <span className="text-[10px] text-[#6a7384]">{budget.periodStart} → {budget.periodEnd}</span>
+                            <span className="text-[10px] text-[#6a7384]">
+                              {budget.isRolling ? "Mensual · automático" : `${budget.periodStart} → ${budget.periodEnd}`}
+                            </span>
                             <span className="text-[10px] font-medium" style={{ color: barColor }}>
                               {over ? `+${money(budget.spent - budget.amount)} excedido` : `${money(budget.amount - budget.spent)} libre`}
                             </span>
