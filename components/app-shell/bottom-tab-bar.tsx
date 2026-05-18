@@ -1,4 +1,4 @@
-import { CreditCard, Home, List, Plus, Settings2 } from "lucide-react";
+import { CreditCard, Home, PiggyBank, Plus, WalletCards } from "lucide-react";
 import type { AppScreen } from "@/features/navigation/types";
 import { FT } from "@/lib/finance-tokens";
 
@@ -13,8 +13,8 @@ export function BottomTabBar({
     { id: "home" as const, label: "Inicio", icon: Home },
     { id: "cards" as const, label: "Tarjetas", icon: CreditCard },
     { id: "add" as const, label: "", icon: Plus, isAdd: true },
-    { id: "transactions" as const, label: "Historial", icon: List },
-    { id: "settings-accounts" as const, label: "Ajustes", icon: Settings2 },
+    { id: "env" as const, label: "Sobres", icon: WalletCards },
+    { id: "goal" as const, label: "Meta", icon: PiggyBank },
   ];
 
   return (

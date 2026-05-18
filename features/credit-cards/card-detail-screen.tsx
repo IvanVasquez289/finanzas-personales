@@ -77,6 +77,36 @@ export function CardDetailScreen({
     setPaymentAmount(0);
   }, [selectedCard]);
 
+  if (data.creditCards.length === 0) {
+    return (
+      <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
+        <div className="flex items-center justify-between">
+          <Button variant="secondary" size="icon" aria-label="Regresar" onClick={onBack}>
+            <ArrowLeft size={16} />
+          </Button>
+          <div className="text-[14px] text-[#a4adbe]">Tarjetas</div>
+          <button
+            type="button"
+            onClick={onManage}
+            className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#161b25] px-3 py-2 text-[12px] text-[#a4adbe]"
+          >
+            <Settings2 size={13} />
+            Configurar
+          </button>
+        </div>
+        <Card className="p-5 text-center">
+          <div className="text-[18px] font-semibold">Sin tarjetas configuradas</div>
+          <p className="mx-auto mt-2 max-w-[300px] text-[12px] leading-[1.45] text-[#a4adbe]">
+            Agrega tu primera tarjeta para calcular ciclos, fechas de pago, presupuesto personal y MSI.
+          </p>
+          <Button className="mt-4 w-full" onClick={onManage}>
+            Agregar tarjeta
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll app-top">
       <div className="flex items-center justify-between">

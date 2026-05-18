@@ -21,11 +21,13 @@ import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
   const [screen, setScreen] = useState<AppScreen>("home");
   const activeTab: AppScreen =
-    screen === "settings-accounts" || screen === "settings-cards" || screen === "settings-plan" || screen === "reorder-envelopes"
-      ? "settings-accounts"
-      : screen === "distribute" || screen === "goal"
-        ? "home"
-        : screen === "calendar" || screen === "reports" || screen === "imports" || screen === "onboarding" || screen === "env"
+    screen === "settings-accounts" || screen === "reorder-envelopes"
+      ? "env"
+      : screen === "settings-cards"
+        ? "cards"
+        : screen === "settings-plan" || screen === "distribute"
+          ? "goal"
+          : screen === "calendar" || screen === "reports" || screen === "imports" || screen === "onboarding" || screen === "transactions"
           ? "home"
           : screen;
 
@@ -40,6 +42,7 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
           onViewReports={() => setScreen("reports")}
           onViewImports={() => setScreen("imports")}
           onViewOnboarding={() => setScreen("onboarding")}
+          onViewGoal={() => setScreen("goal")}
         />
       ) : null}
       {screen === "cards" ? (

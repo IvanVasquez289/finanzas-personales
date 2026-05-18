@@ -29,6 +29,7 @@ export function DashboardScreen({
   onViewReports,
   onViewImports,
   onViewOnboarding,
+  onViewGoal,
 }: {
   data: FinanceSnapshot;
   onViewCards: () => void;
@@ -37,6 +38,7 @@ export function DashboardScreen({
   onViewReports: () => void;
   onViewImports: () => void;
   onViewOnboarding: () => void;
+  onViewGoal: () => void;
 }) {
   const [periodDays, setPeriodDays] = useState(30);
   const allocationItems = data.allocation.items.length > 0
@@ -173,33 +175,35 @@ export function DashboardScreen({
           </Card>
         ) : null}
 
-        <Card className="p-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">{goal.name}</div>
-              <div className="mt-1.5 flex items-baseline gap-2">
-                <span className="font-mono text-[26px] font-semibold tabular-nums">{money(goal.currentAmount)}</span>
-                <span className="text-[13px] text-[#6a7384]">/ {money(goal.targetAmount)}</span>
+        <button type="button" onClick={onViewGoal} className="block w-full text-left">
+          <Card className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">{goal.name}</div>
+                <div className="mt-1.5 flex items-baseline gap-2">
+                  <span className="font-mono text-[26px] font-semibold tabular-nums">{money(goal.currentAmount)}</span>
+                  <span className="text-[13px] text-[#6a7384]">/ {money(goal.targetAmount)}</span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[#3DD68C]">
+                  <ArrowUp size={12} />
+                  <span className="font-mono tabular-nums">+{money(goal.monthlyDelta)}</span>
+                  <span className="text-[#6a7384]">este mes</span>
+                </div>
               </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[#3DD68C]">
-                <ArrowUp size={12} />
-                <span className="font-mono tabular-nums">+{money(goal.monthlyDelta)}</span>
-                <span className="text-[#6a7384]">este mes</span>
-              </div>
+              <Ring size={70} stroke={7} value={goalPct} color={FT.pos}>
+                <div className="font-mono text-[14px] font-semibold">{Math.round(goalPct * 100)}%</div>
+              </Ring>
             </div>
-            <Ring size={70} stroke={7} value={goalPct} color={FT.pos}>
-              <div className="font-mono text-[14px] font-semibold">{Math.round(goalPct * 100)}%</div>
-            </Ring>
-          </div>
-          <div className="mt-3.5">
-            <Spark data={goal.history} />
-          </div>
-          <div className="flex justify-between px-1 text-[10px] text-[#444c5b]">
-            <span>jun ’25</span>
-            <span>nov ’25</span>
-            <span>may ’26</span>
-          </div>
-        </Card>
+            <div className="mt-3.5">
+              <Spark data={goal.history} />
+            </div>
+            <div className="flex justify-between px-1 text-[10px] text-[#444c5b]">
+              <span>inicio</span>
+              <span>avance</span>
+              <span>actual</span>
+            </div>
+          </Card>
+        </button>
 
         {data.dashboard.alerts.length > 0 ? (
           <Card className="border-[#F5B5442e] bg-[#F5B5440f] p-4">
@@ -226,6 +230,11 @@ export function DashboardScreen({
             {data.creditCards.map((card) => (
               <MiniCard key={card.issuer} {...card} />
             ))}
+            {data.creditCards.length === 0 ? (
+              <Card className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                Sin tarjetas configuradas. Crea una desde Configuración inicial.
+              </Card>
+            ) : null}
           </div>
         </div>
 
@@ -235,6 +244,11 @@ export function DashboardScreen({
             {data.payments.map((payment, index) => (
               <PaymentRow key={payment.label} {...payment} last={index === data.payments.length - 1} />
             ))}
+            {data.payments.length === 0 ? (
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                Sin pagos próximos. Aparecerán aquí tarjetas, MSI y compromisos configurados.
+              </div>
+            ) : null}
           </Card>
         </div>
 
