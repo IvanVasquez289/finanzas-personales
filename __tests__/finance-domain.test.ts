@@ -48,6 +48,7 @@ function makeCategory(name: string) {
 function makeFullAccount(name: string) {
   return {
     id: "acc1", userId: "user1", name, type: "debit" as const,
+    linkedCategoryId: null,
     currentBalanceCents: 0, sortOrder: 0, isActive: true,
     createdAt: BASE_DATE, updatedAt: BASE_DATE,
     creditAccount: null,

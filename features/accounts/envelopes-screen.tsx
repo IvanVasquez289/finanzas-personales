@@ -1,6 +1,8 @@
 "use client";
 
-import { Landmark, Plus } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Landmark, Plus, X } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EnvelopeCard } from "@/components/accounts/envelope-card";
 import { EnvelopeDonut } from "@/components/accounts/envelope-donut";
@@ -10,16 +12,21 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { money } from "@/lib/money";
+import { createAccountAction } from "@/features/settings/actions";
+import { initialSettingsState } from "@/features/settings/types";
+
+type CreateMode = "envelope" | "bank" | null;
 
 export function EnvelopesScreen({
   data,
-  onManage,
   onReorder,
 }: {
   data: FinanceSnapshot;
-  onManage: () => void;
   onReorder: () => void;
 }) {
+  const router = useRouter();
+  const [createMode, setCreateMode] = useState<CreateMode>(null);
+  const [createState, createAccount, creating] = useActionState(createAccountAction, initialSettingsState);
   const envelopeTotal = data.envelopes.reduce((a, s) => a + s.balance, 0);
   const realTotal = data.bankAccounts.reduce((a, c) => a + c.balance, 0);
   const legendItems = [
@@ -30,12 +37,23 @@ export function EnvelopesScreen({
     })),
   ];
 
+  useEffect(() => {
+    if (!createState.ok) return;
+    setCreateMode(null);
+    router.refresh();
+  }, [createState.ok, router]);
+
   return (
     <>
       <PageHeader
         eyebrow="Patrimonio"
         title="Tus sobres"
-        right={<Button variant="secondary" size="icon" aria-label="Gestionar cuentas y sobres" onClick={onManage}><Plus size={18} /></Button>}
+        right={
+          <Button variant="secondary" aria-label="Crear sobre" onClick={() => setCreateMode("envelope")}>
+            <Plus size={16} />
+            Nuevo
+          </Button>
+        }
       />
       <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-auto px-4 app-bottom-scroll">
         <Card className="p-[18px]">
@@ -75,15 +93,44 @@ export function EnvelopesScreen({
           </Card>
         </div>
         <div>
-          <SectionHeader title="Sobres" action="Reordenar →" onAction={onReorder} />
+          <SectionHeader title="Sobres" action="Nuevo" onAction={() => setCreateMode("envelope")} />
+          {createMode === "envelope" ? (
+            <CreateDestinationCard
+              title="Nuevo sobre"
+              type="envelope"
+              onClose={() => setCreateMode(null)}
+              action={createAccount}
+              pending={creating}
+              state={createState}
+              categories={data.settings.categories}
+            />
+          ) : null}
           <div className="flex flex-col gap-2.5">
             {data.envelopes.map((envelope) => (
               <EnvelopeCard key={envelope.name} {...envelope} />
             ))}
           </div>
+          {data.envelopes.length > 1 ? (
+            <div className="mt-2 flex justify-end">
+              <button type="button" onClick={onReorder} className="text-[12px] font-medium text-[#6a7384]">
+                Reordenar sobres
+              </button>
+            </div>
+          ) : null}
         </div>
         <div>
-          <SectionHeader title="Cuentas bancarias" action="+ Agregar" onAction={onManage} />
+          <SectionHeader title="Cuentas reales" action="Nuevo" onAction={() => setCreateMode("bank")} />
+          {createMode === "bank" ? (
+            <CreateDestinationCard
+              title="Nueva cuenta real"
+              type="debit"
+              onClose={() => setCreateMode(null)}
+              action={createAccount}
+              pending={creating}
+              state={createState}
+              categories={data.settings.categories}
+            />
+          ) : null}
           <Card className="overflow-hidden">
             {data.bankAccounts.map((account, index) => (
               <div key={account.name} className={`flex items-center gap-3 px-4 py-3.5 ${index === data.bankAccounts.length - 1 ? "" : "border-b border-white/[0.06]"}`}>
@@ -97,6 +144,11 @@ export function EnvelopesScreen({
                 <div className="font-mono text-[16px] font-semibold">{money(account.balance)}</div>
               </div>
             ))}
+            {data.bankAccounts.length === 0 ? (
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                Agrega una cuenta real para registrar dónde está físicamente tu dinero.
+              </div>
+            ) : null}
           </Card>
         </div>
         <Card className="border-[#F5B5442e] bg-[#F5B5440f] p-3.5">
@@ -114,3 +166,72 @@ export function EnvelopesScreen({
     </>
   );
 }
+
+function CreateDestinationCard({
+  title,
+  type,
+  onClose,
+  action,
+  pending,
+  state,
+  categories,
+}: {
+  title: string;
+  type: "debit" | "envelope";
+  onClose: () => void;
+  action: (formData: FormData) => void;
+  pending: boolean;
+  state: { ok: boolean; message: string };
+  categories: { id: string; name: string }[];
+}) {
+  return (
+    <Card className="mb-3 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <div className="text-[14px] font-semibold">{title}</div>
+          <div className="mt-0.5 text-[11px] text-[#6a7384]">
+            {type === "debit" ? "Dónde está el dinero." : "Para qué queda reservado."}
+          </div>
+        </div>
+        <button type="button" onClick={onClose} className="grid size-8 place-items-center rounded-full border border-white/[0.08] text-[#6a7384]">
+          <X size={14} />
+        </button>
+      </div>
+      <form action={action} className="grid gap-3">
+        <input type="hidden" name="type" value={type} />
+        <input
+          name="name"
+          placeholder={type === "debit" ? "BBVA Nómina" : "Comida, renta, libre..."}
+          autoFocus
+          className={fieldClass}
+        />
+        <input
+          name="openingBalance"
+          type="number"
+          step="0.01"
+          placeholder={type === "debit" ? "Saldo actual" : "Saldo inicial del sobre"}
+          className={fieldClass}
+        />
+        {type === "envelope" ? (
+          <select name="linkedCategoryId" className={fieldClass}>
+            <option value="">Sin categoría vinculada</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        ) : null}
+        <Button disabled={pending}>
+          <Plus size={15} />
+          {pending ? "Creando" : "Crear"}
+        </Button>
+        {state.message ? (
+          <div className="text-[12px]" style={{ color: state.ok ? "#3DD68C" : "#F46A6A" }}>
+            {state.message}
+          </div>
+        ) : null}
+      </form>
+    </Card>
+  );
+}
+
+const fieldClass = "h-11 min-w-0 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none placeholder:text-[#6a7384] focus:border-[#2A5BFF]/60";

@@ -168,6 +168,7 @@ model AuthVerification {
 model Account {
   id                 String             @id @default(cuid())
   userId             String
+  linkedCategoryId   String?
   name               String
   type               AccountType
   currentBalanceCents Int               @default(0)
@@ -176,6 +177,7 @@ model Account {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedCategory     Category?          @relation("AccountLinkedCategory", fields: [linkedCategoryId], references: [id], onDelete: SetNull)
   creditAccount      CreditAccount?
   allocations        Allocation[]
   incomeDeposits     IncomeEvent[]       @relation("IncomeDepositAccount")
@@ -185,6 +187,7 @@ model Account {
   installmentPlans   InstallmentPlan[]
 
   @@index([userId, type])
+  @@index([linkedCategoryId])
 }
 
 model CreditAccount {
@@ -287,6 +290,7 @@ model Category {
   isSystem     Boolean       @default(false)
   createdAt    DateTime      @default(now())
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedAccounts Account[]   @relation("AccountLinkedCategory")
   transactions Transaction[]
   budgets      Budget[]
   importItems  ImportItem[]

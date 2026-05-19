@@ -52,7 +52,6 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
       {screen === "env" ? (
         <EnvelopesScreen
           data={snapshot}
-          onManage={() => setScreen("settings-accounts")}
           onReorder={() => setScreen("reorder-envelopes")}
         />
       ) : null}

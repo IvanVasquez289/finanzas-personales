@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useMemo, useState } from "react";
-import { ArrowUp, BarChart3, CalendarDays, HandCoins, LogOut, ScanText } from "lucide-react";
+import { ArrowUp, BarChart3, CalendarDays, HandCoins, HelpCircle, LogOut, ScanText } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { MiniCard } from "@/components/cards/mini-card";
 import { PaymentRow } from "@/components/dashboard/payment-row";
@@ -154,11 +154,12 @@ export function DashboardScreen({
           ))}
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           <QuickAction icon={HandCoins} label="Quincena" onClick={onStartPaycheck} />
           <QuickAction icon={CalendarDays} label="Calendario" onClick={onViewCalendar} />
           <QuickAction icon={BarChart3} label="Reportes" onClick={onViewReports} />
           <QuickAction icon={ScanText} label="Importar" onClick={onViewImports} />
+          <QuickAction icon={HelpCircle} label="Guía" onClick={onViewOnboarding} />
         </div>
 
         {needsSetup ? (

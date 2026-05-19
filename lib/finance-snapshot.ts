@@ -52,6 +52,7 @@ export type FinanceSnapshot = {
     sortOrder: number;
     goal?: number;
     locked?: boolean;
+    linkedCategoryId?: string;
   }[];
   bankAccounts: {
     id: string;
@@ -128,6 +129,7 @@ export type FinanceSnapshot = {
       label: string;
       balance: number;
       color: string;
+      linkedCategoryId?: string;
     }[];
   };
   settings: {
@@ -146,6 +148,7 @@ export type FinanceSnapshot = {
         paymentDueDay: number;
         personalBudget: number;
       };
+      linkedCategoryId?: string;
     }[];
     categories: {
       id: string;
@@ -163,6 +166,8 @@ export type FinanceSnapshot = {
     budgets: {
       id: string;
       label: string;
+      categoryId?: string;
+      accountId?: string;
       amount: number;
       spent: number;
       periodStart: string;
@@ -392,6 +397,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         note: meta.note,
         sortOrder: account.sortOrder,
         goal: account.type === "savings" && mainGoal ? toAmount(mainGoal.targetAmountCents) : undefined,
+        linkedCategoryId: account.linkedCategoryId ?? undefined,
       };
     });
 
@@ -598,6 +604,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         label: envelope.name,
         balance: envelope.balance,
         color: envelope.color,
+        linkedCategoryId: envelope.linkedCategoryId,
       })),
     },
     settings: {
@@ -608,6 +615,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         balance: toAmount(balanceByAccountId.get(account.id) ?? account.currentBalanceCents),
         isActive: account.isActive,
         sortOrder: account.sortOrder,
+        linkedCategoryId: account.linkedCategoryId ?? undefined,
         credit: account.creditAccount
           ? {
               issuer: account.creditAccount.issuer,
@@ -660,6 +668,8 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
         return {
           id: budget.id,
           label: budget.category?.name ?? budget.account?.name ?? budget.scope,
+          categoryId: budget.categoryId ?? undefined,
+          accountId: budget.accountId ?? undefined,
           amount: toAmount(budget.amountCents),
           spent: toAmount(spentCents),
           periodStart: start,

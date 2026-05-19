@@ -103,7 +103,7 @@ export function SettingsScreen({
           <section>
             <SectionHeader
               title="Cuentas reales y sobres"
-              action={createAccountOpen ? undefined : "+ Nueva"}
+              action={createAccountOpen ? undefined : "Nuevo"}
               onAction={() => setCreateAccountOpen(true)}
             />
 
@@ -123,6 +123,12 @@ export function SettingsScreen({
                       <option value="savings">Sobre · Ahorro/meta</option>
                     </select>
                   </div>
+                  <select name="linkedCategoryId" className={fieldClass}>
+                    <option value="">Sin categoría vinculada</option>
+                    {activeCategories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
                   <Input name="openingBalance" type="number" step="0.01" placeholder="Saldo inicial (opcional)" />
                   <Button disabled={accountPending}>Crear</Button>
                   <StateMessage state={accountState} />
@@ -143,6 +149,7 @@ export function SettingsScreen({
                       <div className="text-[14px] font-semibold">{account.name}</div>
                       <div className="mt-0.5 text-[11px] text-[#6a7384]">
                         {accountLabel(account.type)} · {money(account.balance)} · {account.isActive ? "activa" : "inactiva"}
+                        {account.linkedCategoryId ? " · vinculada a categoría" : ""}
                       </div>
                     </div>
                     {editingAccountId === account.id ? <ChevronUp size={15} className="text-[#6a7384]" /> : <Pencil size={14} className="text-[#6a7384]" />}
@@ -158,6 +165,12 @@ export function SettingsScreen({
                           <option value="cash">Cuenta real · Efectivo</option>
                           <option value="envelope">Sobre · Presupuesto</option>
                           <option value="savings">Sobre · Ahorro/meta</option>
+                        </select>
+                        <select name="linkedCategoryId" defaultValue={account.linkedCategoryId ?? ""} className="min-[390px]:col-span-2 h-11 min-w-0 rounded-[14px] border border-white/[0.08] bg-[#10141d] px-3.5 text-[14px] text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60">
+                          <option value="">Sin categoría vinculada</option>
+                          {activeCategories.map((category) => (
+                            <option key={category.id} value={category.id}>{category.name}</option>
+                          ))}
                         </select>
                         <Button variant="secondary" disabled={updateAccountPending} className="min-[390px]:col-span-2">Guardar</Button>
                       </form>
@@ -205,7 +218,7 @@ export function SettingsScreen({
           <section>
             <SectionHeader
               title="Categorías"
-              action={createCategoryOpen ? undefined : "+ Nueva"}
+              action={createCategoryOpen ? undefined : "Nuevo"}
               onAction={() => setCreateCategoryOpen(true)}
             />
 
@@ -273,7 +286,7 @@ export function SettingsScreen({
           <section>
             <SectionHeader
               title="Presupuestos"
-              action={createBudgetOpen ? undefined : "+ Nuevo"}
+              action={createBudgetOpen ? undefined : "Nuevo"}
               onAction={() => setCreateBudgetOpen(true)}
             />
 
@@ -353,7 +366,7 @@ export function SettingsScreen({
           <section>
             <SectionHeader
               title="Tarjetas de crédito"
-              action={createCardOpen ? undefined : "+ Nueva"}
+              action={createCardOpen ? undefined : "Nuevo"}
               onAction={() => setCreateCardOpen(true)}
             />
 
@@ -475,7 +488,7 @@ export function SettingsScreen({
           <section>
             <SectionHeader
               title="Metas de ahorro"
-              action={createGoalOpen ? undefined : "+ Nueva"}
+              action={createGoalOpen ? undefined : "Nuevo"}
               onAction={() => setCreateGoalOpen(true)}
             />
 

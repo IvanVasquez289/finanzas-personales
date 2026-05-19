@@ -35,7 +35,7 @@ export function ExpenseFormScreen({
       note: "",
       categoryId: data.expenseForm.categories[0]?.id ?? "",
       accountId: data.expenseForm.accounts[0]?.id ?? "",
-      budgetAccountId: data.expenseForm.budgetAccounts[0]?.id ?? "",
+      budgetAccountId: "",
       date: currentDate,
       time: currentTime,
       isInstallment: false,
@@ -57,6 +57,8 @@ export function ExpenseFormScreen({
   const methods = data.expenseForm.accounts;
   const budgetAccounts = data.expenseForm.budgetAccounts;
   const selectedMethod = methods.find((item) => item.id === method);
+  const selectedBudget = data.settings.budgets.find((budget) => budget.categoryId === cat);
+  const suggestedBudgetAccount = budgetAccounts.find((account) => account.linkedCategoryId === cat);
   const merchantSuggestion = useMemo(() => suggestCategory(merchant, cats), [cats, merchant]);
   const recentMerchants = useMemo(() => {
     const seen = new Set<string>();
@@ -92,6 +94,11 @@ export function ExpenseFormScreen({
     if (!merchantSuggestion || cat === merchantSuggestion.id) return;
     form.setValue("categoryId", merchantSuggestion.id);
   }, [cat, form, merchantSuggestion]);
+
+  useEffect(() => {
+    if (!suggestedBudgetAccount || budgetAccountId) return;
+    form.setValue("budgetAccountId", suggestedBudgetAccount.id);
+  }, [budgetAccountId, form, suggestedBudgetAccount]);
 
   return (
     <form action={formAction} className="flex flex-1 flex-col overflow-hidden bg-[#06080c] app-top">
@@ -188,6 +195,28 @@ export function ExpenseFormScreen({
               ))}
             </div>
           )}
+          {selectedBudget ? (
+            <Card className="mt-3 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[12px] font-semibold">Presupuesto activo</div>
+                  <div className="mt-0.5 text-[11px] text-[#6a7384]">Límite por categoría, sin importar método de pago</div>
+                </div>
+                <div className="font-mono text-[12px] text-[#a4adbe]">
+                  {money(selectedBudget.spent)} / {money(selectedBudget.amount)}
+                </div>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, selectedBudget.amount > 0 ? (selectedBudget.spent / selectedBudget.amount) * 100 : 0)}%`,
+                    background: selectedBudget.spent > selectedBudget.amount ? FT.danger : FT.accent,
+                  }}
+                />
+              </div>
+            </Card>
+          ) : null}
         </div>
 
         {/* Account */}
@@ -258,8 +287,32 @@ export function ExpenseFormScreen({
 
         {/* Budget envelope */}
         <div className="mt-5">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Descontar del sobre</div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Sobre opcional</div>
+            {budgetAccountId ? (
+              <button type="button" onClick={() => form.setValue("budgetAccountId", "")} className="text-[11px] font-medium text-[#6a7384]">
+                Sin sobre
+              </button>
+            ) : null}
+          </div>
           <Card className="overflow-hidden">
+            <button
+              type="button"
+              onClick={() => form.setValue("budgetAccountId", "")}
+              className="flex w-full items-center gap-3 border-b border-white/[0.06] px-4 py-3.5 text-left transition-colors"
+              style={{ background: budgetAccountId ? undefined : "rgba(42,91,255,0.04)" }}
+            >
+              <span
+                className="grid size-[20px] shrink-0 place-items-center rounded-full border transition-colors"
+                style={{ borderColor: budgetAccountId ? "rgba(255,255,255,0.10)" : FT.accent }}
+              >
+                {!budgetAccountId ? <span className="size-2.5 rounded-full bg-[#2A5BFF]" /> : null}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-medium">Sin sobre</span>
+                <span className="mt-0.5 block text-[11px] text-[#6a7384]">Solo afecta cuenta/tarjeta y presupuesto por categoría</span>
+              </span>
+            </button>
             {budgetAccounts.map((account, index) => (
               <button
                 type="button"
@@ -280,7 +333,9 @@ export function ExpenseFormScreen({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[14px] font-medium">{account.label}</span>
-                  <span className="mt-0.5 block font-mono text-[11px] text-[#6a7384]">Disponible en sobre: {money(account.balance)}</span>
+                  <span className="mt-0.5 block font-mono text-[11px] text-[#6a7384]">
+                    {account.linkedCategoryId === cat ? "Sugerido por categoría · " : ""}Disponible: {money(account.balance)}
+                  </span>
                 </span>
               </button>
             ))}

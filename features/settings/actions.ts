@@ -18,10 +18,12 @@ export async function createAccountAction(
   const parsed = z.object({
     name: z.string().trim().min(1, "Escribe el nombre."),
     type: z.enum(["debit", "savings", "cash", "envelope"]),
+    linkedCategoryId: z.string().optional(),
     openingBalance: moneySchema,
   }).safeParse({
     name: formData.get("name"),
     type: formData.get("type"),
+    linkedCategoryId: formData.get("linkedCategoryId") || undefined,
     openingBalance: formData.get("openingBalance") || 0,
   });
 
@@ -30,12 +32,17 @@ export async function createAccountAction(
   if (!user) return error("Inicia sesión.");
 
   const balanceCents = toCents(parsed.data.openingBalance);
+  const linkedCategory = parsed.data.linkedCategoryId
+    ? await prisma.category.findFirst({ where: { id: parsed.data.linkedCategoryId, userId: user.id } })
+    : null;
+  if (parsed.data.linkedCategoryId && !linkedCategory) return error("La categoría vinculada no existe.");
   const sortOrder = await nextAccountSortOrder(user.id);
   const account = await prisma.account.create({
     data: {
       userId: user.id,
       name: parsed.data.name,
       type: parsed.data.type,
+      linkedCategoryId: ["envelope", "savings"].includes(parsed.data.type) ? linkedCategory?.id ?? null : null,
       currentBalanceCents: balanceCents,
       sortOrder,
     },
@@ -71,19 +78,30 @@ export async function updateAccountAction(
     id: z.string().min(1),
     name: z.string().trim().min(1),
     type: z.enum(["debit", "savings", "cash", "envelope"]),
+    linkedCategoryId: z.string().optional(),
   }).safeParse({
     id: formData.get("id"),
     name: formData.get("name"),
     type: formData.get("type"),
+    linkedCategoryId: formData.get("linkedCategoryId") || undefined,
   });
 
   if (!parsed.success) return error("Revisa la cuenta.");
   const user = await getCurrentFinanceUser();
   if (!user) return error("Inicia sesión.");
 
+  const linkedCategory = parsed.data.linkedCategoryId
+    ? await prisma.category.findFirst({ where: { id: parsed.data.linkedCategoryId, userId: user.id } })
+    : null;
+  if (parsed.data.linkedCategoryId && !linkedCategory) return error("La categoría vinculada no existe.");
+
   await prisma.account.update({
     where: { id: parsed.data.id, userId: user.id },
-    data: { name: parsed.data.name, type: parsed.data.type },
+    data: {
+      name: parsed.data.name,
+      type: parsed.data.type,
+      linkedCategoryId: ["envelope", "savings"].includes(parsed.data.type) ? linkedCategory?.id ?? null : null,
+    },
   });
 
   revalidatePath("/");
