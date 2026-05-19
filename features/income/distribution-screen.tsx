@@ -186,13 +186,13 @@ export function DistributionScreen({
               Asignado · <span className="font-mono text-[#eef2f8]">{money(total)}</span>
             </div>
             <div className="text-[12px] font-semibold" style={{ color: diff === 0 ? FT.pos : diff > 0 ? FT.warn : FT.danger }}>
-              {diff === 0 ? "✓ Cuadrado" : diff > 0 ? `Faltan ${money(diff)}` : `Te pasaste ${money(Math.abs(diff))}`}
+              {diff >= 0 ? `${money(diff)} sin reservar` : `Te pasaste ${money(Math.abs(diff))}`}
             </div>
           </div>
           <SegmentBar
             segments={[
               ...distributableAccounts.map((account) => ({ value: vals[account.id] ?? 0, color: account.color })),
-              ...(diff > 0 ? [{ value: diff, color: "rgba(255,255,255,0.06)" }] : []),
+              ...(diff > 0 ? [{ value: diff, color: "rgba(255,255,255,0.08)" }] : []),
             ]}
           />
         </Card>
@@ -219,7 +219,7 @@ export function DistributionScreen({
           ))}
           {distributableAccounts.length === 0 ? (
             <Card className="p-4 text-center text-[13px] text-[#a4adbe]">
-              Crea primero tus sobres desde configuración inicial.
+              No necesitas sobres para registrar la quincena. Si quieres apartar dinero concreto, crea uno desde Sobres.
             </Card>
           ) : null}
           {data.bankAccounts.length === 0 ? (
@@ -230,7 +230,7 @@ export function DistributionScreen({
         </div>
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#06080c] from-60% to-transparent px-4 app-bottom-fixed pt-3">
-        <Button className="w-full" disabled={diff !== 0 || pending || distributableAccounts.length === 0 || !depositAccountId}>
+        <Button className="w-full" disabled={diff < 0 || pending || !depositAccountId}>
           {pending ? "Confirmando" : "Confirmar distribución"}
         </Button>
       </div>

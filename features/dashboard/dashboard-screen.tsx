@@ -65,7 +65,7 @@ export function DashboardScreen({
     .reduce((sum, payment) => sum + payment.amount, 0);
   const goalPct = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0;
   const needsSetup =
-    data.envelopes.length === 0 ||
+    data.bankAccounts.length === 0 ||
     data.expenseForm.categories.length === 0 ||
     data.goals.ahorro.targetAmount <= 0;
   const filteredTransactions = useMemo(() => {
@@ -95,8 +95,8 @@ export function DashboardScreen({
           </button>
         }
       />
-      <div className="no-scrollbar flex flex-1 flex-col gap-[18px] overflow-auto px-4 app-bottom-scroll">
-        <Card className="relative overflow-hidden rounded-[22px] p-[18px]">
+      <div className="no-scrollbar flex flex-1 flex-col gap-5 overflow-auto px-5 app-bottom-scroll">
+        <Card className="relative overflow-hidden rounded-[24px] p-5">
           <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_0%_0%,rgba(42,91,255,0.18)_0%,rgba(42,91,255,0)_55%)]" />
           <div className="absolute inset-0 opacity-40 [background:linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px)_0_0/100%_28px]" />
           <div className="relative">
@@ -132,7 +132,7 @@ export function DashboardScreen({
           </div>
         </Card>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2.5">
           {[
             [14, "14 días"],
             [30, "30 días"],
@@ -142,7 +142,7 @@ export function DashboardScreen({
               key={days}
               type="button"
               onClick={() => setPeriodDays(Number(days))}
-              className="h-9 rounded-xl border text-[12px] font-medium"
+              className="h-10 rounded-[14px] border text-[12px] font-semibold"
               style={{
                 background: periodDays === days ? FT.accentSoft : "rgba(255,255,255,0.04)",
                 borderColor: periodDays === days ? "rgba(42,91,255,0.45)" : "rgba(255,255,255,0.08)",
@@ -154,8 +154,8 @@ export function DashboardScreen({
           ))}
         </div>
 
-        <div className="grid grid-cols-5 gap-2">
-          <QuickAction icon={HandCoins} label="Quincena" onClick={onStartPaycheck} />
+        <div className="grid grid-cols-2 gap-2.5">
+          <QuickAction icon={HandCoins} label="Planear quincena" onClick={onStartPaycheck} primary />
           <QuickAction icon={CalendarDays} label="Calendario" onClick={onViewCalendar} />
           <QuickAction icon={BarChart3} label="Reportes" onClick={onViewReports} />
           <QuickAction icon={ScanText} label="Importar" onClick={onViewImports} />
@@ -166,7 +166,7 @@ export function DashboardScreen({
           <Card className="border-[#2A5BFF2e] bg-[#2A5BFF0f] p-4">
             <div className="text-[15px] font-semibold">Configura tu sistema financiero</div>
             <p className="mt-1 text-[12px] leading-[1.45] text-[#a4adbe]">
-              Esta cuenta está vacía. Crea tus sobres, categorías, tarjetas y meta antes de registrar el primer flujo.
+              Empieza con una cuenta real, categorías y una meta. Los sobres son opcionales si quieres apartar dinero.
             </p>
             <button
               type="button"
@@ -297,19 +297,31 @@ function QuickAction({
   icon: Icon,
   label,
   onClick,
+  primary = false,
 }: {
   icon: React.ComponentType<{ size?: number }>;
   label: string;
   onClick: () => void;
+  primary?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[58px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/[0.08] bg-[#10141d] text-[11px] font-medium text-[#a4adbe]"
+      className={`flex h-[58px] items-center gap-3 rounded-[18px] border px-3.5 text-left transition-colors ${
+        primary
+          ? "col-span-2 border-[#2A5BFF55] bg-[#2A5BFF1f] text-[#eef2f8]"
+          : "border-white/[0.08] bg-[#10141d] text-[#a4adbe]"
+      }`}
     >
-      <Icon size={17} />
-      <span>{label}</span>
+      <span
+        className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+          primary ? "bg-[#2A5BFF] text-white" : "bg-white/[0.05] text-[#a4adbe]"
+        }`}
+      >
+        <Icon size={18} />
+      </span>
+      <span className="min-w-0 text-[13px] font-semibold leading-tight">{label}</span>
     </button>
   );
 }

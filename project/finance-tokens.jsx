@@ -235,48 +235,67 @@ function TabBar({ active = 'home' }) {
   ];
   return (
     <div style={{
-      position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 28, paddingTop: 8,
-      background: 'linear-gradient(to top, rgba(6,8,12,0.96) 60%, rgba(6,8,12,0))',
-      display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+      position: 'absolute', left: 0, right: 0, bottom: 0, padding: '28px 18px 44px',
+      background: 'linear-gradient(to top, rgba(6,8,12,0.98) 72%, rgba(6,8,12,0))',
       zIndex: 30,
     }}>
-      {items.map(it => it.isAdd ? (
-        <div key={it.id} style={{
-          width: 52, height: 52, borderRadius: 99, background: FT.accent,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 8px 24px rgba(42,91,255,0.45), inset 0 1px 0 rgba(255,255,255,0.25)',
-          marginTop: -22,
-        }}>{FIcon.plus('#fff')}</div>
-      ) : (
-        <div key={it.id} style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-          color: active === it.id ? FT.text : FT.textFade,
-        }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            {it.glyph}
-          </svg>
-          <span style={{ fontFamily: FT.sans, fontSize: 10, letterSpacing: 0.2 }}>{it.label}</span>
-        </div>
-      ))}
+      <div style={{
+        minHeight: 76, borderRadius: 30, border: `1px solid ${FT.hairline}`,
+        background: 'rgba(8,11,18,0.94)', backdropFilter: 'blur(24px)',
+        boxShadow: '0 -12px 38px rgba(0,0,0,0.48)',
+        display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', alignItems: 'center',
+        padding: '8px 8px',
+      }}>
+        {items.map(it => it.isAdd ? (
+          <div key={it.id} style={{
+            width: 58, height: 58, borderRadius: 99, background: FT.accent,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 10px 28px rgba(42,91,255,0.50), inset 0 1px 0 rgba(255,255,255,0.24)',
+            margin: '-36px auto 0',
+          }}>{FIcon.plus('#fff')}</div>
+        ) : (
+          <div key={it.id} style={{
+            width: 58, height: 58, margin: '0 auto',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            color: active === it.id ? FT.text : FT.textFade,
+            borderRadius: 16,
+            background: active === it.id ? 'rgba(255,255,255,0.07)' : 'transparent',
+            boxShadow: active === it.id ? 'inset 0 0 0 1px rgba(255,255,255,0.13)' : 'none',
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" strokeWidth={active === it.id ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+              {it.glyph}
+            </svg>
+            <span style={{ fontFamily: FT.sans, fontSize: 10, fontWeight: active === it.id ? 650 : 500, lineHeight: 1 }}>{it.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 // Status-bar-aware page header inside an iOS frame
-function PageHeader({ eyebrow, title, right, style = {} }) {
+function PageHeader({ eyebrow, title, right, version = 'V2.0.0', style = {} }) {
   return (
     <div style={{
-      padding: '60px 20px 16px', display: 'flex', alignItems: 'flex-end',
+      padding: '60px 20px 18px', display: 'flex', alignItems: 'flex-end',
       justifyContent: 'space-between', ...style,
     }}>
       <div>
         {eyebrow && <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
           fontFamily: FT.sans, fontSize: 12, color: FT.textMute,
-          letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4,
-        }}>{eyebrow}</div>}
+          letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8,
+        }}>
+          <span>{eyebrow}</span>
+          <span style={{
+            border: `1px solid ${FT.hairline}`, background: 'rgba(255,255,255,0.04)',
+            borderRadius: 99, padding: '2px 8px', fontSize: 10,
+            fontWeight: 650, color: FT.textDim, letterSpacing: 0.4,
+          }}>{version}</span>
+        </div>}
         <div style={{
-          fontFamily: FT.sans, fontSize: 28, fontWeight: 600,
+          fontFamily: FT.sans, fontSize: 31, fontWeight: 600,
           color: FT.text, letterSpacing: -0.5, lineHeight: 1.1,
         }}>{title}</div>
       </div>

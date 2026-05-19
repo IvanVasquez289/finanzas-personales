@@ -41,15 +41,11 @@ export async function confirmDistributionAction(
       amount: Number(amount),
     };
   });
-  const validAllocationInputs = allocationInputs.filter((input) => input.accountId && Number.isFinite(input.amount) && input.amount >= 0);
+  const validAllocationInputs = allocationInputs.filter((input) => input.accountId && Number.isFinite(input.amount) && input.amount > 0);
   const total = validAllocationInputs.reduce((sum, input) => sum + input.amount, 0);
 
-  if (Math.round(total * 100) !== Math.round(values.amount * 100)) {
-    return { ok: false, message: "La distribución debe cuadrar con el ingreso." };
-  }
-
-  if (validAllocationInputs.length === 0) {
-    return { ok: false, message: "Crea al menos una cuenta o sobre para distribuir." };
+  if (Math.round(total * 100) > Math.round(values.amount * 100)) {
+    return { ok: false, message: "No puedes reservar más que el ingreso recibido." };
   }
 
   const user = await getCurrentFinanceUser();

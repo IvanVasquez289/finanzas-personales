@@ -42,6 +42,7 @@ export type PaycheckPlan = {
   savingsAmount: number;
   freeAmount: number;
   dailyFreeAmount: number;
+  unreservedAmount: number;
   suggestions: Record<string, number>;
   priorityItems: {
     label: string;
@@ -85,6 +86,7 @@ export function buildPaycheckPlan(input: PaycheckPlanInput): PaycheckPlan {
     freeAmount,
     incomeAmount: amount,
   });
+  const suggestedEnvelopeAmount = sum(Object.values(suggestions));
 
   return {
     daysUntilNextIncome,
@@ -95,6 +97,7 @@ export function buildPaycheckPlan(input: PaycheckPlanInput): PaycheckPlan {
     savingsAmount,
     freeAmount,
     dailyFreeAmount: daysUntilNextIncome > 0 ? roundCurrency(freeAmount / daysUntilNextIncome) : freeAmount,
+    unreservedAmount: Math.max(0, roundCurrency(amount - suggestedEnvelopeAmount)),
     suggestions,
     priorityItems: [
       {
@@ -151,24 +154,21 @@ function buildDestinationSuggestions({
   const fixedEnvelope = findDestination(destinations, ["fijo", "servicio", "renta", "casa", "deuda"]);
   const variableEnvelope = findDestination(destinations, ["variable", "comida", "super", "transporte", "gasto"]);
   const freeEnvelope = findDestination(destinations, ["libre", "diario", "personal"]);
-  const primaryBank =
-    destinations.find((destination) => destination.kind === "bank") ??
-    destinations.find((destination) => destination.kind === "cash") ??
-    destinations.find((destination) => destination.kind !== "savings") ??
-    destinations[0];
 
   add(suggestions, savings?.id, savingsAmount);
-  add(suggestions, fixedEnvelope?.id ?? primaryBank?.id, obligationAmount);
-  add(suggestions, variableEnvelope?.id ?? freeEnvelope?.id ?? primaryBank?.id, budgetReserveAmount);
-  add(suggestions, freeEnvelope?.id ?? primaryBank?.id, freeAmount);
+  add(suggestions, fixedEnvelope?.id, obligationAmount);
+  add(suggestions, variableEnvelope?.id ?? freeEnvelope?.id, budgetReserveAmount);
+  add(suggestions, freeEnvelope?.id, freeAmount);
 
-  const assigned = sum(Object.values(suggestions));
-  const delta = roundCurrency(incomeAmount - assigned);
-  if (Math.abs(delta) > 0.009) {
-    add(suggestions, freeEnvelope?.id ?? primaryBank?.id, delta);
+  const capped: Record<string, number> = {};
+  let remaining = incomeAmount;
+  for (const [id, value] of Object.entries(suggestions)) {
+    const next = Math.min(Math.max(0, roundCurrency(value)), Math.max(0, remaining));
+    capped[id] = next;
+    remaining = roundCurrency(remaining - next);
   }
 
-  return Object.fromEntries(Object.entries(suggestions).map(([id, value]) => [id, Math.max(0, roundCurrency(value))]));
+  return capped;
 }
 
 function inferPayPeriodDays(receivedAt: string, previousReceivedAt?: string) {

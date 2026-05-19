@@ -45,10 +45,17 @@ function makeCategory(name: string) {
   return { id: "cat1", userId: "user1", name, color: null, isSystem: false, createdAt: BASE_DATE };
 }
 
-function makeFullAccount(name: string) {
+function makeFullAccount(name: string, overrides: Partial<{
+  id: string;
+  type: "debit" | "savings" | "credit_card" | "store_card" | "cash" | "envelope";
+  linkedCategoryId: string | null;
+}> = {}) {
   return {
-    id: "acc1", userId: "user1", name, type: "debit" as const,
-    linkedCategoryId: null,
+    id: overrides.id ?? "acc1",
+    userId: "user1",
+    name,
+    type: overrides.type ?? "debit",
+    linkedCategoryId: overrides.linkedCategoryId ?? null,
     currentBalanceCents: 0, sortOrder: 0, isActive: true,
     createdAt: BASE_DATE, updatedAt: BASE_DATE,
     creditAccount: null,
@@ -274,6 +281,7 @@ describe("calculateDashboardMetrics", () => {
       {
         categoryId: "cat1",
         accountId: "acc1",
+        budgetAccountId: null,
         amountCents: 8600,
         direction: "expense" as const,
         status: "confirmed" as const,
@@ -292,6 +300,7 @@ describe("calculateDashboardMetrics", () => {
       {
         categoryId: "cat1",
         accountId: "acc1",
+        budgetAccountId: null,
         amountCents: 12000,
         direction: "expense" as const,
         status: "confirmed" as const,
@@ -309,6 +318,7 @@ describe("calculateDashboardMetrics", () => {
       {
         categoryId: "cat1",
         accountId: "acc1",
+        budgetAccountId: null,
         amountCents: 8000,
         direction: "expense" as const,
         status: "confirmed" as const,
@@ -326,6 +336,7 @@ describe("calculateDashboardMetrics", () => {
       {
         categoryId: "cat1",
         accountId: "acc1",
+        budgetAccountId: null,
         amountCents: 9000,
         direction: "income" as const,
         status: "confirmed" as const,
@@ -347,6 +358,7 @@ describe("calculateDashboardMetrics", () => {
       {
         categoryId: "cat1",
         accountId: "acc1",
+        budgetAccountId: null,
         amountCents: 9500,
         direction: "expense" as const,
         status: "confirmed" as const,
@@ -400,6 +412,7 @@ describe("calculateDashboardMetrics", () => {
       {
         categoryId: null,
         accountId: "acc1",
+        budgetAccountId: null,
         amountCents: 9000,
         direction: "expense" as const,
         status: "confirmed" as const,
@@ -409,5 +422,31 @@ describe("calculateDashboardMetrics", () => {
     const result = calculateDashboardMetrics(makeBalanceMetricsInput({ budgets: [budget], transactions }));
 
     expect(result.alerts[0]?.label).toBe("Gastos Fijos");
+  });
+
+  it("uses budgetAccountId for account-scoped envelope budgets", () => {
+    const budget = makeBudget({
+      categoryId: null,
+      accountId: "food",
+      amountCents: 10000,
+      category: null,
+      account: makeFullAccount("Comida", { id: "food", type: "envelope" }),
+    });
+    budget.scope = "account";
+    const transactions = [
+      {
+        categoryId: null,
+        accountId: "bank1",
+        budgetAccountId: "food",
+        amountCents: 9000,
+        direction: "expense" as const,
+        status: "confirmed" as const,
+        date: new Date(),
+      },
+    ];
+    const result = calculateDashboardMetrics(makeBalanceMetricsInput({ budgets: [budget], transactions }));
+
+    expect(result.alerts[0]?.label).toBe("Comida");
+    expect(result.alerts[0]?.tone).toBe("warn");
   });
 });

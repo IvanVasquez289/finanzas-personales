@@ -60,9 +60,9 @@ textarea {
 }
 
 .app-bottom-scroll {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 96px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 136px);
 }
 
 .app-bottom-fixed {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 70px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 104px);
 }

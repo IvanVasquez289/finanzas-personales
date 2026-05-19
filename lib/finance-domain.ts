@@ -106,7 +106,7 @@ export function calculateDashboardMetrics({
   cardDueCents: number;
   installmentCents: number;
   budgets: (Budget & { category?: Category | null; account?: Account | null })[];
-  transactions: Pick<Transaction, "categoryId" | "accountId" | "amountCents" | "direction" | "status" | "date">[];
+  transactions: Pick<Transaction, "categoryId" | "accountId" | "budgetAccountId" | "amountCents" | "direction" | "status" | "date">[];
 }): DashboardMetrics {
   const spendableAccountIds = new Set(
     accounts
@@ -126,7 +126,7 @@ export function calculateDashboardMetrics({
         if (transaction.direction !== "expense" || transaction.status !== "confirmed") return false;
         if (transaction.date < budget.periodStart || transaction.date > budget.periodEnd) return false;
         if (budget.categoryId) return transaction.categoryId === budget.categoryId;
-        if (budget.accountId) return transaction.accountId === budget.accountId;
+        if (budget.accountId) return transaction.budgetAccountId === budget.accountId || transaction.accountId === budget.accountId;
         return false;
       })
       .reduce((sum, transaction) => sum + transaction.amountCents, 0);
