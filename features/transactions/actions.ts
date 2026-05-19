@@ -18,6 +18,7 @@ const createExpenseSchema = z.object({
     .trim()
     .regex(/^\d+(\.\d{1,2})?$/, "El monto debe tener máximo dos decimales."),
   accountId: z.string().min(1, "Selecciona una cuenta."),
+  budgetAccountId: z.string().optional(),
   categoryId: z.string().optional(),
   merchant: z.string().trim().min(1, "Escribe el comercio."),
   note: z.string().trim().max(180, "La nota es demasiado larga.").optional(),
@@ -34,6 +35,7 @@ export async function createExpenseAction(
   const parsed = createExpenseSchema.safeParse({
     amount: formData.get("amount"),
     accountId: formData.get("accountId"),
+    budgetAccountId: formData.get("budgetAccountId") || undefined,
     categoryId: formData.get("categoryId") || undefined,
     merchant: formData.get("merchant"),
     note: formData.get("note"),
@@ -85,6 +87,20 @@ export async function createExpenseAction(
   if (parsed.data.categoryId && !category) {
     return { ok: false, message: "La categoría seleccionada no existe." };
   }
+  const budgetAccount = parsed.data.budgetAccountId
+    ? await prisma.account.findFirst({
+        where: {
+          id: parsed.data.budgetAccountId,
+          userId: user.id,
+          isActive: true,
+          type: { in: ["envelope", "savings"] },
+        },
+      })
+    : null;
+
+  if (parsed.data.budgetAccountId && !budgetAccount) {
+    return { ok: false, message: "El sobre seleccionado no existe." };
+  }
 
   const now = parseLocalDateTime(parsed.data.date, parsed.data.time);
   const isCreditAccount = account.type === "credit_card" || account.type === "store_card";
@@ -126,6 +142,7 @@ export async function createExpenseAction(
         data: {
           userId: user.id,
           accountId: account.id,
+          budgetAccountId: budgetAccount?.id ?? null,
           creditCardCycleId: creditCycle?.id,
           categoryId: category?.id ?? null,
           date: now,

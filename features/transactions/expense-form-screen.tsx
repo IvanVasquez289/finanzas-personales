@@ -12,6 +12,7 @@ import { Tag } from "@/components/finance/tag";
 import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
+import { money } from "@/lib/money";
 import { createExpenseAction } from "./actions";
 
 export function ExpenseFormScreen({
@@ -34,6 +35,7 @@ export function ExpenseFormScreen({
       note: "",
       categoryId: data.expenseForm.categories[0]?.id ?? "",
       accountId: data.expenseForm.accounts[0]?.id ?? "",
+      budgetAccountId: data.expenseForm.budgetAccounts[0]?.id ?? "",
       date: currentDate,
       time: currentTime,
       isInstallment: false,
@@ -49,9 +51,11 @@ export function ExpenseFormScreen({
   const merchant = form.watch("merchant");
   const cat = form.watch("categoryId");
   const method = form.watch("accountId");
+  const budgetAccountId = form.watch("budgetAccountId");
   const isInstallment = form.watch("isInstallment");
   const cats = data.expenseForm.categories;
   const methods = data.expenseForm.accounts;
+  const budgetAccounts = data.expenseForm.budgetAccounts;
   const selectedMethod = methods.find((item) => item.id === method);
   const merchantSuggestion = useMemo(() => suggestCategory(merchant, cats), [cats, merchant]);
   const recentMerchants = useMemo(() => {
@@ -94,6 +98,7 @@ export function ExpenseFormScreen({
       <input type="hidden" name="amount" value={amount} readOnly />
       <input type="hidden" name="categoryId" value={cat} readOnly />
       <input type="hidden" name="accountId" value={method} readOnly />
+      <input type="hidden" name="budgetAccountId" value={budgetAccountId} readOnly />
       <input type="hidden" name="isInstallment" value={isInstallment ? "true" : "false"} readOnly />
 
       {/* Header */}
@@ -240,7 +245,7 @@ export function ExpenseFormScreen({
             ))}
             {methods.length === 0 && (
               <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
-                Crea cuentas desde Configuración.
+                Crea una cuenta real desde Configuración.
               </div>
             )}
             {methods.length > 0 && filteredMethods.length === 0 && (
@@ -248,6 +253,42 @@ export function ExpenseFormScreen({
                 Sin cuentas de ese tipo.
               </div>
             )}
+          </Card>
+        </div>
+
+        {/* Budget envelope */}
+        <div className="mt-5">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.06em] text-[#6a7384]">Descontar del sobre</div>
+          <Card className="overflow-hidden">
+            {budgetAccounts.map((account, index) => (
+              <button
+                type="button"
+                key={account.id}
+                onClick={() => form.setValue("budgetAccountId", account.id)}
+                className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
+                  index === budgetAccounts.length - 1 ? "" : "border-b border-white/[0.06]"
+                }`}
+                style={{ background: budgetAccountId === account.id ? `${account.color}12` : undefined }}
+              >
+                <span
+                  className="grid size-[20px] shrink-0 place-items-center rounded-full border transition-colors"
+                  style={{ borderColor: budgetAccountId === account.id ? account.color : "rgba(255,255,255,0.10)" }}
+                >
+                  {budgetAccountId === account.id ? (
+                    <span className="size-2.5 rounded-full" style={{ background: account.color }} />
+                  ) : null}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-medium">{account.label}</span>
+                  <span className="mt-0.5 block font-mono text-[11px] text-[#6a7384]">Disponible en sobre: {money(account.balance)}</span>
+                </span>
+              </button>
+            ))}
+            {budgetAccounts.length === 0 ? (
+              <div className="px-4 py-5 text-center text-[13px] text-[#6a7384]">
+                Crea sobres para saber para qué presupuesto fue cada gasto.
+              </div>
+            ) : null}
           </Card>
         </div>
 

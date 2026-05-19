@@ -47,7 +47,7 @@ export function TransactionsScreen({ data, onBack }: { data: FinanceSnapshot; on
         (mode === "cards" && ["credit_card", "store_card"].includes(transaction.accountType));
       const inQuery =
         normalizedQuery.length === 0 ||
-        [transaction.merchant, transaction.cat, transaction.account, transaction.cycleLabel]
+        [transaction.merchant, transaction.cat, transaction.account, transaction.budgetAccount, transaction.cycleLabel]
           .filter((value): value is string => Boolean(value))
           .some((value) => value.toLowerCase().includes(normalizedQuery));
       return inPeriod && inMode && inQuery;

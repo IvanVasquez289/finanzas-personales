@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useMemo, useState } from "react";
-import { ArrowUp, BarChart3, CalendarDays, LogOut, ScanText, Settings2 } from "lucide-react";
+import { ArrowUp, BarChart3, CalendarDays, HandCoins, LogOut, ScanText } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { MiniCard } from "@/components/cards/mini-card";
 import { PaymentRow } from "@/components/dashboard/payment-row";
@@ -30,6 +30,7 @@ export function DashboardScreen({
   onViewImports,
   onViewOnboarding,
   onViewGoal,
+  onStartPaycheck,
 }: {
   data: FinanceSnapshot;
   onViewCards: () => void;
@@ -39,6 +40,7 @@ export function DashboardScreen({
   onViewImports: () => void;
   onViewOnboarding: () => void;
   onViewGoal: () => void;
+  onStartPaycheck: () => void;
 }) {
   const [periodDays, setPeriodDays] = useState(30);
   const allocationItems = data.allocation.items.length > 0
@@ -153,10 +155,10 @@ export function DashboardScreen({
         </div>
 
         <div className="grid grid-cols-4 gap-2">
+          <QuickAction icon={HandCoins} label="Quincena" onClick={onStartPaycheck} />
           <QuickAction icon={CalendarDays} label="Calendario" onClick={onViewCalendar} />
           <QuickAction icon={BarChart3} label="Reportes" onClick={onViewReports} />
           <QuickAction icon={ScanText} label="Importar" onClick={onViewImports} />
-          <QuickAction icon={Settings2} label="Ajustes" onClick={onViewOnboarding} />
         </div>
 
         {needsSetup ? (

@@ -23,13 +23,14 @@ export function deriveAccountBalances({
 }: {
   accounts: Pick<Account, "id" | "type" | "currentBalanceCents">[];
   allocations: Pick<Allocation, "accountId" | "amountCents">[];
-  transactions: Pick<Transaction, "accountId" | "amountCents" | "direction" | "source">[];
+  transactions: Pick<Transaction, "accountId" | "budgetAccountId" | "amountCents" | "direction" | "source">[];
 }): AccountBalance[] {
   return accounts.map((account) => {
     const accountAllocations = allocations
       .filter((allocation) => allocation.accountId === account.id)
       .reduce((sum, allocation) => sum + allocation.amountCents, 0);
     const accountTransactions = transactions.filter((transaction) => transaction.accountId === account.id);
+    const budgetTransactions = transactions.filter((transaction) => transaction.budgetAccountId === account.id);
     const income = accountTransactions
       .filter((transaction) => transaction.direction === "income")
       .reduce((sum, transaction) => sum + transaction.amountCents, 0);
@@ -43,7 +44,11 @@ export function deriveAccountBalances({
         if (transaction.direction === "expense") return sum - transaction.amountCents;
         return sum;
       }, 0);
-    const hasLedger = accountAllocations !== 0 || accountTransactions.length > 0;
+    const legacyEnvelopeTransactions =
+      account.type === "savings" || account.type === "envelope"
+        ? accountTransactions.filter((transaction) => !transaction.budgetAccountId && transaction.source !== "system")
+        : [];
+    const hasLedger = accountAllocations !== 0 || accountTransactions.length > 0 || budgetTransactions.length > 0;
 
     if (!hasLedger) {
       return {
@@ -54,9 +59,20 @@ export function deriveAccountBalances({
     }
 
     if (account.type === "savings" || account.type === "envelope") {
+      const budgetExpenses = [...budgetTransactions, ...legacyEnvelopeTransactions]
+        .filter((transaction) => transaction.direction === "expense" || transaction.direction === "transfer")
+        .reduce((sum, transaction) => sum + transaction.amountCents, 0);
+      const budgetAdjustments = accountTransactions
+        .filter((transaction) => transaction.source === "system")
+        .reduce((sum, transaction) => {
+          if (transaction.direction === "income") return sum + transaction.amountCents;
+          if (transaction.direction === "expense") return sum - transaction.amountCents;
+          return sum;
+        }, 0);
+
       return {
         accountId: account.id,
-        balanceCents: accountAllocations - expenses + adjustments,
+        balanceCents: accountAllocations - budgetExpenses + budgetAdjustments,
         source: "derived",
       };
     }

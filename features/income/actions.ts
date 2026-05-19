@@ -13,6 +13,7 @@ export type ConfirmDistributionState = {
 const confirmDistributionSchema = z.object({
   amount: z.coerce.number().positive("El ingreso debe ser mayor a cero."),
   receivedAt: z.string().min(1, "Selecciona la fecha de recepción."),
+  depositAccountId: z.string().min(1, "Selecciona la cuenta donde recibiste la quincena."),
 });
 
 export async function confirmDistributionAction(
@@ -22,6 +23,7 @@ export async function confirmDistributionAction(
   const parsed = confirmDistributionSchema.safeParse({
     amount: formData.get("amount"),
     receivedAt: formData.get("receivedAt"),
+    depositAccountId: formData.get("depositAccountId"),
   });
 
   if (!parsed.success) {
@@ -60,12 +62,25 @@ export async function confirmDistributionAction(
   const incomeId = `${user.id}:income:${dayKey}`;
   const amountCents = toCents(values.amount);
 
+  const depositAccount = await prisma.account.findFirst({
+    where: {
+      id: values.depositAccountId,
+      userId: user.id,
+      isActive: true,
+      type: { in: ["debit", "cash"] },
+    },
+  });
+
+  if (!depositAccount) {
+    return { ok: false, message: "La cuenta de depósito no está disponible." };
+  }
+
   const accounts = await prisma.account.findMany({
     where: {
       userId: user.id,
       id: { in: validAllocationInputs.map((input) => input.accountId) },
       isActive: true,
-      type: { in: ["debit", "savings", "cash", "envelope"] },
+      type: { in: ["savings", "envelope"] },
     },
   });
   const accountById = new Map(accounts.map((account) => [account.id, account]));
@@ -81,11 +96,13 @@ export async function confirmDistributionAction(
       update: {
         amountCents,
         receivedAt: today,
+        depositAccountId: depositAccount.id,
         source: "Quincena",
       },
       create: {
         id: incomeId,
         userId: user.id,
+        depositAccountId: depositAccount.id,
         amountCents,
         receivedAt: today,
         source: "Quincena",
@@ -149,11 +166,6 @@ export async function confirmDistributionAction(
       }
     }
 
-    const depositAccount =
-      (await tx.account.findFirst({
-        where: { userId: user.id, type: "debit", isActive: true },
-        orderBy: { createdAt: "asc" },
-      })) ?? accounts[0];
     const fingerprint = `${dayKey}|QUINCENA|${amountCents}|${depositAccount.id}`;
 
     await tx.transaction.upsert({

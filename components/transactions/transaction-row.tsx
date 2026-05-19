@@ -5,6 +5,7 @@ export function TransactionRow({
   merchant,
   cat,
   account,
+  budgetAccount,
   amount,
   date,
   income,
@@ -13,6 +14,7 @@ export function TransactionRow({
   merchant: string;
   cat: string;
   account: string;
+  budgetAccount?: string;
   amount: number;
   date: string;
   income?: boolean;
@@ -29,7 +31,7 @@ export function TransactionRow({
       <div className="min-w-0 flex-1">
         <div className="text-[14px] font-medium">{merchant}</div>
         <div className="mt-0.5 truncate text-[11px] text-[#6a7384]">
-          {cat} · {account} · {date}
+          {cat} · {budgetAccount ? `${budgetAccount} · ` : ""}{account} · {date}
         </div>
       </div>
       <div className="font-mono text-[14px] font-semibold tabular-nums" style={{ color: income ? FT.pos : FT.text }}>

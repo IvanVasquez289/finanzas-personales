@@ -9,7 +9,6 @@ import { SectionHeader } from "@/components/finance/section-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { FinanceSnapshot } from "@/lib/finance-snapshot";
-import { FT } from "@/lib/finance-tokens";
 import { money } from "@/lib/money";
 
 export function EnvelopesScreen({
@@ -21,15 +20,14 @@ export function EnvelopesScreen({
   onManage: () => void;
   onReorder: () => void;
 }) {
-  const total = data.envelopes.reduce((a, s) => a + s.balance, 0) + data.bankAccounts.reduce((a, c) => a + c.balance, 0);
-  const bankTotal = data.bankAccounts.reduce((sum, account) => sum + account.balance, 0);
+  const envelopeTotal = data.envelopes.reduce((a, s) => a + s.balance, 0);
+  const realTotal = data.bankAccounts.reduce((a, c) => a + c.balance, 0);
   const legendItems = [
     ...data.envelopes.slice(0, 3).map((envelope) => ({
       color: envelope.color,
       label: envelope.name,
       value: envelope.balance,
     })),
-    ...(data.bankAccounts.length > 0 ? [{ color: FT.textDim, label: "Cuentas", value: bankTotal }] : []),
   ];
 
   return (
@@ -44,9 +42,9 @@ export function EnvelopesScreen({
           <div className="flex items-center gap-4">
             <EnvelopeDonut data={data} />
             <div className="flex-1">
-              <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Total disponible</div>
+              <div className="text-[12px] uppercase tracking-[0.06em] text-[#6a7384]">Reservado en sobres</div>
               <div className="mt-1">
-                <BigNum value={total} size={28} />
+                <BigNum value={envelopeTotal} size={28} />
               </div>
               <div className="mt-2 flex flex-col gap-1">
                 {legendItems.length > 0 ? (
@@ -60,12 +58,22 @@ export function EnvelopesScreen({
                     </div>
                   ))
                 ) : (
-                  <div className="text-[12px] text-[#6a7384]">Sin cuentas configuradas.</div>
+                  <div className="text-[12px] text-[#6a7384]">Sin sobres configurados.</div>
                 )}
               </div>
             </div>
           </div>
         </Card>
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-3">
+            <div className="text-[10px] uppercase tracking-[0.06em] text-[#6a7384]">Cuentas reales</div>
+            <div className="mt-1 font-mono text-[16px] font-semibold">{money(realTotal)}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-[10px] uppercase tracking-[0.06em] text-[#6a7384]">Sobres</div>
+            <div className="mt-1 font-mono text-[16px] font-semibold">{money(envelopeTotal)}</div>
+          </Card>
+        </div>
         <div>
           <SectionHeader title="Sobres" action="Reordenar →" onAction={onReorder} />
           <div className="flex flex-col gap-2.5">
@@ -97,7 +105,7 @@ export function EnvelopesScreen({
             <div>
               <div className="text-[13px] font-medium">Define tus propios sobres antes de gastar.</div>
               <p className="mt-1 text-[12px] leading-[1.45] text-[#a4adbe]">
-                La app ya no crea sobres por defecto. Tus saldos y reportes salen de las cuentas que configures aquí.
+                Las cuentas reales dicen dónde está el dinero. Los sobres dicen para qué está reservado.
               </p>
             </div>
           </div>

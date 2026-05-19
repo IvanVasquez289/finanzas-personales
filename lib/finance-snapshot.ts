@@ -11,6 +11,7 @@ export type FinanceSnapshot = {
     amount: number;
     periodLabel: string;
     receivedAt: string;
+    depositAccountId?: string;
   };
   allocation: {
     pagoTarjetas: number;
@@ -122,6 +123,12 @@ export type FinanceSnapshot = {
       paymentMethod: "credit_card" | "debit" | "cash" | "transfer";
       cycleLabel?: string;
     }[];
+    budgetAccounts: {
+      id: string;
+      label: string;
+      balance: number;
+      color: string;
+    }[];
   };
   settings: {
     accounts: {
@@ -183,6 +190,8 @@ export type FinanceTransaction = {
   account: string;
   accountId: string;
   accountType: string;
+  budgetAccount?: string;
+  budgetAccountId?: string;
   amount: number;
   date: string;
   dateIso: string;
@@ -304,7 +313,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       where: { userId: user.id, status: "confirmed" },
       orderBy: { date: "desc" },
       take: 8,
-      include: { account: true, category: true },
+      include: { account: true, budgetAccount: true, category: true },
     }),
     prisma.transaction.findMany({
       where: { userId: user.id, status: "confirmed" },
@@ -312,6 +321,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       take: 200,
       include: {
         account: true,
+        budgetAccount: true,
         category: true,
         creditCardCycle: true,
       },
@@ -496,6 +506,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       amount: toAmount(currentIncomeEvent?.amountCents),
       periodLabel: currentIncomeEvent ? `Quincena · ${formatShortDate(currentIncomeEvent.receivedAt)}` : "Sin ingreso registrado",
       receivedAt: currentIncomeEvent?.receivedAt.toISOString() ?? "",
+      depositAccountId: currentIncomeEvent?.depositAccountId ?? undefined,
     },
     previousIncome: previousIncomeEvent
       ? {
@@ -548,6 +559,8 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
       account: transaction.account.name,
       accountId: transaction.accountId,
       accountType: transaction.account.type,
+      budgetAccount: transaction.budgetAccount?.name,
+      budgetAccountId: transaction.budgetAccountId ?? undefined,
       amount: transaction.direction === "expense" ? -toAmount(transaction.amountCents) : toAmount(transaction.amountCents),
       date: formatShortDate(transaction.date),
       dateIso: transaction.date.toISOString(),
@@ -564,7 +577,7 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
     expenseForm: {
       categories: await getExpenseCategories(user.id),
       accounts: accounts
-        .filter((account) => ["credit_card", "store_card", "debit", "cash", "envelope"].includes(account.type))
+        .filter((account) => ["credit_card", "store_card", "debit", "cash"].includes(account.type))
         .map((account) => {
           const credit = creditAccounts.find((item) => item.accountId === account.id);
           const cycle = credit?.cycles[0];
@@ -580,6 +593,12 @@ export async function getFinanceSnapshot(userId: string): Promise<FinanceSnapsho
             cycleLabel: cycle ? `Ciclo ${formatCycle(cycle.startDate, cycle.endDate)}` : undefined,
           };
         }),
+      budgetAccounts: envelopes.map((envelope) => ({
+        id: envelope.id,
+        label: envelope.name,
+        balance: envelope.balance,
+        color: envelope.color,
+      })),
     },
     settings: {
       accounts: allAccounts.map((account) => ({
@@ -703,6 +722,7 @@ function emptySnapshot(): FinanceSnapshot {
     expenseForm: {
       categories: [],
       accounts: [],
+      budgetAccounts: [],
     },
     settings: {
       accounts: [],

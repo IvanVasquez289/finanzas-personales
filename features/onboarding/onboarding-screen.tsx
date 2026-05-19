@@ -23,7 +23,7 @@ export function OnboardingScreen({
   onIncome: () => void;
 }) {
   const checks = [
-    { label: "Cuentas y sobres", detail: "Dónde existe tu dinero disponible.", done: data.envelopes.length > 0 || data.bankAccounts.length > 0, action: onAccounts, icon: WalletCards },
+    { label: "Cuentas y sobres", detail: "Dónde está el dinero y para qué está reservado.", done: data.envelopes.length > 0 && data.bankAccounts.length > 0, action: onAccounts, icon: WalletCards },
     { label: "Categorías y presupuestos", detail: "Reglas para clasificar y limitar gastos.", done: data.expenseForm.categories.length > 0 && data.settings.budgets.length > 0, action: onAccounts, icon: Landmark },
     { label: "Tarjetas", detail: "Corte, pago, presupuesto y color de cada tarjeta.", done: data.creditCards.length > 0, action: onCards, icon: CreditCard },
     { label: "Meta e ingreso", detail: "Ahorro objetivo y distribución de la quincena.", done: data.goals.ahorro.targetAmount > 0 && data.income.amount > 0, action: data.goals.ahorro.targetAmount > 0 ? onIncome : onPlan, icon: Target },

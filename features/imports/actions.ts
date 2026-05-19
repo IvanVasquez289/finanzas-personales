@@ -58,7 +58,7 @@ export async function createImportBatchAction(
   if (!user) return { ok: false, message: "Inicia sesión para importar." };
 
   const account = await prisma.account.findFirst({
-    where: { id: parsed.data.accountId, userId: user.id, isActive: true },
+    where: { id: parsed.data.accountId, userId: user.id, isActive: true, type: { in: ["debit", "cash", "credit_card", "store_card"] } },
   });
   if (!account) return { ok: false, message: "La cuenta seleccionada no existe." };
 
@@ -151,7 +151,7 @@ export async function confirmImportBatchAction(
   }
 
   const account = await prisma.account.findFirst({
-    where: { id: accountId, userId: user.id, isActive: true },
+    where: { id: accountId, userId: user.id, isActive: true, type: { in: ["debit", "cash", "credit_card", "store_card"] } },
     include: {
       creditAccount: {
         include: { cycles: { where: { status: "open" }, orderBy: { startDate: "desc" } } },

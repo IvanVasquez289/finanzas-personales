@@ -25,12 +25,14 @@ function makeAllocation(accountId: string, amountCents: number) {
 
 function makeTx(overrides: Partial<{
   accountId: string;
+  budgetAccountId: string | null;
   amountCents: number;
   direction: "income" | "expense" | "transfer";
   source: "manual" | "screenshot" | "pdf" | "system";
 }> = {}) {
   return {
     accountId: overrides.accountId ?? "acc1",
+    budgetAccountId: "budgetAccountId" in overrides ? overrides.budgetAccountId ?? null : null,
     amountCents: overrides.amountCents ?? 0,
     direction: overrides.direction ?? "expense",
     source: overrides.source ?? "manual",
@@ -123,6 +125,21 @@ describe("deriveAccountBalances", () => {
     const result = deriveAccountBalances({ accounts, allocations, transactions });
 
     expect(result[0]).toMatchObject({ balanceCents: 7000, source: "derived" });
+  });
+
+  it("uses budgetAccountId to reduce an envelope while keeping the payment account separate", () => {
+    const accounts = [
+      makeAccount({ id: "bank1", type: "debit" }),
+      makeAccount({ id: "food", type: "envelope" }),
+    ];
+    const allocations = [makeAllocation("food", 5000)];
+    const transactions = [
+      makeTx({ accountId: "bank1", budgetAccountId: "food", amountCents: 1200, direction: "expense" }),
+    ];
+    const result = deriveAccountBalances({ accounts, allocations, transactions });
+
+    expect(result.find((balance) => balance.accountId === "bank1")?.balanceCents).toBe(-1200);
+    expect(result.find((balance) => balance.accountId === "food")?.balanceCents).toBe(3800);
   });
 
   it("always returns 0 for credit_card accounts", () => {

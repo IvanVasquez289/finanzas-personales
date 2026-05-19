@@ -2,7 +2,7 @@ import type { FinanceSnapshot } from "@/lib/finance-snapshot";
 import { FT } from "@/lib/finance-tokens";
 
 export function EnvelopeDonut({ data }: { data: FinanceSnapshot }) {
-  const items = [...data.envelopes, ...data.bankAccounts.map((account) => ({ ...account, color: FT.textDim }))];
+  const items = data.envelopes.length > 0 ? data.envelopes : data.bankAccounts.map((account) => ({ ...account, color: FT.textDim }));
   const total = items.reduce((a, s) => a + s.balance, 0) || 1;
   const size = 116;
   const stroke = 14;
@@ -33,7 +33,7 @@ export function EnvelopeDonut({ data }: { data: FinanceSnapshot }) {
           return element;
         })}
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-[9px] uppercase tracking-[0.06em] text-[#6a7384]">Patrimonio</div>
+      <div className="absolute inset-0 grid place-items-center text-[9px] uppercase tracking-[0.06em] text-[#6a7384]">Sobres</div>
     </div>
   );
 }

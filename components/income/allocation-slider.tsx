@@ -35,7 +35,15 @@ export function AllocationSlider({
           <div className="mt-0.5 truncate text-[11px] text-[#6a7384]">{note}</div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[18px] font-semibold">{money(value)}</div>
+          <input
+            aria-label={`Monto para ${name}`}
+            type="number"
+            min={0}
+            step="0.01"
+            value={value}
+            onChange={(event) => onChange(Number(event.target.value))}
+            className="h-9 w-[112px] rounded-xl border border-white/[0.08] bg-[#0c1018] px-2 text-right font-mono text-[16px] font-semibold text-[#eef2f8] outline-none focus:border-[#2A5BFF]/60"
+          />
           <div className="mt-0.5 text-[10px]" style={{ color: isSuggested ? FT.pos : FT.textMute }}>
             {isSuggested ? "✓ sugerido" : `sugerido ${money(sugerido)}`}
           </div>

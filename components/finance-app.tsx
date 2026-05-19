@@ -43,6 +43,7 @@ export function FinanceApp({ snapshot }: { snapshot: FinanceSnapshot }) {
           onViewImports={() => setScreen("imports")}
           onViewOnboarding={() => setScreen("onboarding")}
           onViewGoal={() => setScreen("goal")}
+          onStartPaycheck={() => setScreen("distribute")}
         />
       ) : null}
       {screen === "cards" ? (

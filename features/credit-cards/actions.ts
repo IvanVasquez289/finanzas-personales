@@ -57,14 +57,14 @@ export async function registerCardPaymentAction(
           id: parsed.data.paymentAccountId,
           userId: user.id,
           isActive: true,
-          type: { in: ["debit", "cash", "savings", "envelope"] },
+          type: { in: ["debit", "cash"] },
         },
       })
     : await prisma.account.findFirst({
         where: {
           userId: user.id,
           isActive: true,
-          type: { in: ["debit", "cash", "savings", "envelope"] },
+          type: { in: ["debit", "cash"] },
         },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       });

@@ -102,7 +102,7 @@ export function SettingsScreen({
         {section === "accounts" ? (
           <section>
             <SectionHeader
-              title="Cuentas y sobres"
+              title="Cuentas reales y sobres"
               action={createAccountOpen ? undefined : "+ Nueva"}
               onAction={() => setCreateAccountOpen(true)}
             />
@@ -110,16 +110,17 @@ export function SettingsScreen({
             {createAccountOpen && (
               <Card className="mb-4 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[13px] font-semibold">Nueva cuenta</span>
+                  <span className="text-[13px] font-semibold">Nuevo destino</span>
                   <button type="button" onClick={() => setCreateAccountOpen(false)} className="text-[#6a7384]"><X size={15} /></button>
                 </div>
                 <form action={createAccount} className="grid gap-3">
                   <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-[1fr_128px]">
                     <Input name="name" placeholder="Nombre" autoFocus />
                     <select name="type" className={fieldClass}>
-                      <option value="savings">Ahorro</option>
-                      <option value="debit">Débito</option>
-                      <option value="cash">Efectivo</option>
+                      <option value="debit">Cuenta real · Débito</option>
+                      <option value="cash">Cuenta real · Efectivo</option>
+                      <option value="envelope">Sobre · Presupuesto</option>
+                      <option value="savings">Sobre · Ahorro/meta</option>
                     </select>
                   </div>
                   <Input name="openingBalance" type="number" step="0.01" placeholder="Saldo inicial (opcional)" />
@@ -141,7 +142,7 @@ export function SettingsScreen({
                     <div className="min-w-0 flex-1 text-left">
                       <div className="text-[14px] font-semibold">{account.name}</div>
                       <div className="mt-0.5 text-[11px] text-[#6a7384]">
-                        {account.type} · {money(account.balance)} · {account.isActive ? "activa" : "inactiva"}
+                        {accountLabel(account.type)} · {money(account.balance)} · {account.isActive ? "activa" : "inactiva"}
                       </div>
                     </div>
                     {editingAccountId === account.id ? <ChevronUp size={15} className="text-[#6a7384]" /> : <Pencil size={14} className="text-[#6a7384]" />}
@@ -153,9 +154,10 @@ export function SettingsScreen({
                         <input type="hidden" name="id" value={account.id} />
                         <Input name="name" defaultValue={account.name} />
                         <select name="type" defaultValue={account.type} className={fieldClass}>
-                          <option value="savings">Ahorro</option>
-                          <option value="debit">Débito</option>
-                          <option value="cash">Efectivo</option>
+                          <option value="debit">Cuenta real · Débito</option>
+                          <option value="cash">Cuenta real · Efectivo</option>
+                          <option value="envelope">Sobre · Presupuesto</option>
+                          <option value="savings">Sobre · Ahorro/meta</option>
                         </select>
                         <Button variant="secondary" disabled={updateAccountPending} className="min-[390px]:col-span-2">Guardar</Button>
                       </form>
@@ -634,6 +636,17 @@ function StateMessage({ state }: { state: { ok: boolean; message: string } }) {
       {state.message}
     </div>
   );
+}
+
+function accountLabel(type: string) {
+  const labels: Record<string, string> = {
+    debit: "Cuenta real",
+    cash: "Efectivo",
+    envelope: "Sobre",
+    savings: "Sobre de ahorro",
+  };
+
+  return labels[type] ?? type;
 }
 
 function CardColorPicker({ name, defaultValue }: { name: string; defaultValue: string }) {
